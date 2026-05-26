@@ -12,6 +12,24 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.InterviewSprouts">
         <activity
+            android:name=".SavedReportsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".StarBuilderActivity"
+            android:exported="false" />
+        <activity
+            android:name=".InterviewPracticeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BulletRewriterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ResumeReportActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ResumeInputActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.InterviewSprouts">

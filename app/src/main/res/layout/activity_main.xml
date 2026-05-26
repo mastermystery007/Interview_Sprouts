@@ -1,34 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    tools:context=".MainActivity">
+    android:fillViewport="true">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true">
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize" />
+            android:layout_height="wrap_content"
+            android:text="InterviewSprout"
+            android:textSize="32sp"
+            android:textStyle="bold" />
 
-    </com.google.android.material.appbar.AppBarLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grow your resume. Practice smarter. Get job-ready."
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp" />
 
-    <include layout="@layout/content_main" />
+        <Button
+            android:id="@+id/btnResumeReview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resume Review" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="@dimen/fab_margin"
-        android:layout_marginBottom="16dp"
-        app:srcCompat="@android:drawable/ic_dialog_email" />
+        <Button
+            android:id="@+id/btnInterviewPractice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Interview Practice"
+            android:layout_marginTop="12dp" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <Button
+            android:id="@+id/btnStarBuilder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="STAR Answer Builder"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btnBulletRewriter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bullet Rewriter"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btnSavedReports"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Saved Reports"
+            android:layout_marginTop="12dp" />
+
+    </LinearLayout>
+</ScrollView>
