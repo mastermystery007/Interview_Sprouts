@@ -4,9 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,9 +18,38 @@ import com.tom_roush.pdfbox.text.PDFTextStripper
 
 class ResumeInputActivity : AppCompatActivity() {
 
-    private lateinit var editResumeText: EditText
+    private var extractedResumeText: String = ""
+
     private lateinit var textAttachedFile: TextView
     private lateinit var textExtractionStatus: TextView
+    private lateinit var spinnerTargetRole: Spinner
+
+    private val professionList = listOf(
+        "Software Engineer",
+        "Data Analyst",
+        "Business Analyst",
+        "Marketing Executive",
+        "Digital Marketing Specialist",
+        "Product Manager",
+        "Finance Analyst",
+        "Sales Executive",
+        "Operations Analyst",
+        "HR Executive",
+        "UX/UI Designer",
+        "Project Manager"
+    )
+
+    private val experienceLevelList = listOf(
+        "Student",
+        "Internship Applicant",
+        "Fresh Graduate",
+        "0-1 Years",
+        "1-2 Years",
+        "2-4 Years",
+        "4-7 Years",
+        "7+ Years",
+        "Career Switcher"
+    )
 
     private val pdfPickerLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -32,28 +62,29 @@ class ResumeInputActivity : AppCompatActivity() {
                 val fileName = getFileName(uri) ?: "Selected resume PDF"
                 textAttachedFile.text = "Attached file: $fileName"
 
-                val extractedText = extractTextFromPdf(uri)
+                val text = extractTextFromPdf(uri)
+                extractedResumeText = text
 
-                if (extractedText.isBlank()) {
+                if (text.isBlank()) {
                     textExtractionStatus.text =
                         "No readable text found. This may be a scanned/image PDF."
                     Toast.makeText(
                         this,
-                        "No readable text found. Try pasting resume text manually.",
+                        "No readable text found. Try another PDF.",
                         Toast.LENGTH_LONG
                     ).show()
                 } else {
-                    editResumeText.setText(extractedText)
                     textExtractionStatus.text =
-                        "Text extracted successfully. You can preview/edit it before analysis."
+                        "Resume text extracted successfully. Ready for analysis."
                     Toast.makeText(
                         this,
-                        "PDF text extracted successfully.",
+                        "PDF attached and text extracted.",
                         Toast.LENGTH_SHORT
                     ).show()
                 }
             } catch (e: Exception) {
-                textExtractionStatus.text = "Could not read PDF. Try another file or paste text."
+                extractedResumeText = ""
+                textExtractionStatus.text = "Could not read PDF. Try another file."
                 Toast.makeText(
                     this,
                     "Could not read PDF: ${e.message}",
@@ -69,63 +100,56 @@ class ResumeInputActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_resume_input)
 
-        editResumeText = findViewById(R.id.editResumeText)
         textAttachedFile = findViewById(R.id.textAttachedFile)
         textExtractionStatus = findViewById(R.id.textExtractionStatus)
+        spinnerTargetRole = findViewById(R.id.spinnerTargetRole)
 
-        val editTargetRole = findViewById<EditText>(R.id.editTargetRole)
-        val editExperienceLevel = findViewById<EditText>(R.id.editExperienceLevel)
+        val spinnerExperienceLevel = findViewById<Spinner>(R.id.spinnerExperienceLevel)
         val editJobSpecification = findViewById<EditText>(R.id.editJobSpecification)
-
         val btnAnalyzeResume = findViewById<Button>(R.id.btnAnalyzeResume)
         val btnUploadPdf = findViewById<Button>(R.id.btnUploadPdf)
-        val btnToggleExtractedText = findViewById<Button>(R.id.btnToggleExtractedText)
+
+        val professionAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            professionList
+        )
+
+        professionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerTargetRole.adapter = professionAdapter
+
+        val experienceAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            experienceLevelList
+        )
+
+        experienceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerExperienceLevel.adapter = experienceAdapter
 
         btnUploadPdf.setOnClickListener {
             pdfPickerLauncher.launch(arrayOf("application/pdf"))
         }
 
-        btnToggleExtractedText.setOnClickListener {
-            if (editResumeText.visibility == View.VISIBLE) {
-                editResumeText.visibility = View.GONE
-                btnToggleExtractedText.text = "Preview / Edit Resume Text"
-            } else {
-                editResumeText.visibility = View.VISIBLE
-                btnToggleExtractedText.text = "Hide Resume Text"
-            }
-        }
-
         btnAnalyzeResume.setOnClickListener {
-            val resumeText = editResumeText.text.toString().trim()
-            val targetRole = editTargetRole.text.toString().trim()
-            val experienceLevel = editExperienceLevel.text.toString().trim()
+            val resumeText = extractedResumeText.trim()
+            val targetRole = spinnerTargetRole.selectedItem.toString()
+            val experienceLevel = spinnerExperienceLevel.selectedItem.toString()
             val jobSpecification = editJobSpecification.text.toString().trim()
 
             if (resumeText.length < 50) {
                 Toast.makeText(
                     this,
-                    "Please paste or upload more resume text before analyzing.",
+                    "Please upload a readable resume PDF before analyzing.",
                     Toast.LENGTH_SHORT
                 ).show()
                 return@setOnClickListener
             }
 
-            val finalTargetRole = if (targetRole.isBlank()) {
-                "General Job Applicant"
-            } else {
-                targetRole
-            }
-
-            val finalExperienceLevel = if (experienceLevel.isBlank()) {
-                "Not specified"
-            } else {
-                experienceLevel
-            }
-
             val intent = Intent(this, ResumeReportActivity::class.java)
             intent.putExtra("resume_text", resumeText)
-            intent.putExtra("target_role", finalTargetRole)
-            intent.putExtra("experience_level", finalExperienceLevel)
+            intent.putExtra("target_role", targetRole)
+            intent.putExtra("experience_level", experienceLevel)
             intent.putExtra("job_specification", jobSpecification)
             startActivity(intent)
         }

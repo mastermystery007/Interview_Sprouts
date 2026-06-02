@@ -3,7 +3,8 @@
     android:id="@+id/resumeInputRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,13 +16,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Resume Review"
+            android:textColor="#111111"
             android:textSize="28sp"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Upload your resume PDF or paste resume text. Add a target role and job specification for better feedback."
+            android:text="Upload your resume PDF and add job details for better feedback."
+            android:textColor="#333333"
             android:textSize="15sp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="20dp" />
@@ -37,6 +40,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="No file attached"
+            android:textColor="#111111"
             android:textSize="14sp"
             android:layout_marginTop="10dp" />
 
@@ -44,59 +48,63 @@
             android:id="@+id/textExtractionStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="You can also paste your resume text manually below."
+            android:text="Upload a PDF resume before analysis."
+            android:textColor="#555555"
             android:textSize="13sp"
             android:layout_marginTop="4dp" />
 
-        <Button
-            android:id="@+id/btnToggleExtractedText"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Preview / Edit Resume Text"
-            android:layout_marginTop="12dp" />
+            android:text="Target Profession"
+            android:textColor="#111111"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:layout_marginTop="20dp" />
 
-        <EditText
-            android:id="@+id/editResumeText"
+        <Spinner
+            android:id="@+id/spinnerTargetRole"
             android:layout_width="match_parent"
-            android:layout_height="260dp"
-            android:gravity="top"
-            android:hint="Paste resume text here or upload a PDF..."
-            android:inputType="textMultiLine"
-            android:padding="12dp"
-            android:background="@android:drawable/edit_text"
-            android:layout_marginTop="12dp" />
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="#F2F2F2"
+            android:padding="8dp" />
 
-        <EditText
-            android:id="@+id/editTargetRole"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Target role, e.g. Business Analyst, Marketing Executive, Software Engineer"
-            android:inputType="text"
+            android:text="Experience Level"
+            android:textColor="#111111"
+            android:textSize="15sp"
+            android:textStyle="bold"
             android:layout_marginTop="16dp" />
 
-        <EditText
-            android:id="@+id/editExperienceLevel"
+        <Spinner
+            android:id="@+id/spinnerExperienceLevel"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Experience level, e.g. Student, Fresh Graduate, Mid-level"
-            android:inputType="text"
-            android:layout_marginTop="12dp" />
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="#F2F2F2"
+            android:padding="8dp" />
 
         <EditText
             android:id="@+id/editJobSpecification"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
+            android:layout_height="190dp"
             android:gravity="top"
-            android:hint="Optional: Paste job specification / job description here for missing keyword suggestions..."
+            android:hint="Optional: Paste job specification / job description here..."
             android:inputType="textMultiLine"
             android:padding="12dp"
-            android:background="@android:drawable/edit_text"
+            android:textColor="#111111"
+            android:textColorHint="#777777"
+            android:background="#F7F7F7"
             android:layout_marginTop="16dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tip: Job specifications help the app find missing skills, tools, keywords, and responsibilities for the exact role."
+            android:text="Tip: Job specifications help find missing skills, tools, keywords, and responsibilities for the exact role."
+            android:textColor="#555555"
             android:textSize="12sp"
             android:layout_marginTop="10dp" />
 
@@ -104,6 +112,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Privacy: Your resume is processed only to generate feedback. Reports are not saved unless you choose to save them locally."
+            android:textColor="#555555"
             android:textSize="12sp"
             android:layout_marginTop="16dp" />
 
