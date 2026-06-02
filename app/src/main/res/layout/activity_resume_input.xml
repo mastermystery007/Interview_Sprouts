@@ -1,10 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/resumeInputRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ResumeInputActivity">
+    android:fillViewport="true">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resume Review"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Paste your resume text or upload a PDF."
+            android:textSize="15sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp" />
+
+        <Button
+            android:id="@+id/btnUploadPdf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Upload Resume PDF" />
+
+        <EditText
+            android:id="@+id/editResumeText"
+            android:layout_width="match_parent"
+            android:layout_height="260dp"
+            android:gravity="top"
+            android:hint="Paste resume text here or upload a PDF..."
+            android:inputType="textMultiLine"
+            android:padding="12dp"
+            android:background="@android:drawable/edit_text"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/editTargetRole"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Target role, e.g. Software Engineer"
+            android:inputType="text"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/editExperienceLevel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Experience level, e.g. Fresh Graduate"
+            android:inputType="text"
+            android:layout_marginTop="12dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Privacy: Your resume is processed only to generate feedback. Reports are not saved unless you choose to save them locally."
+            android:textSize="12sp"
+            android:layout_marginTop="16dp" />
+
+        <Button
+            android:id="@+id/btnAnalyzeResume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Analyze Resume"
+            android:layout_marginTop="20dp" />
+
+    </LinearLayout>
+</ScrollView>

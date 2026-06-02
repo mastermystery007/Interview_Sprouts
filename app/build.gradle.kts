@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
