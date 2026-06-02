@@ -1,63 +1,40 @@
 package com.example.interviewsprouts
 
+import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import androidx.activity.enableEdgeToEdge
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import com.example.interviewsprouts.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var binding: ActivityMainBinding
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        setContentView(R.layout.activity_main)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        val btnResumeReview = findViewById<Button>(R.id.btnResumeReview)
+        val btnInterviewPractice = findViewById<Button>(R.id.btnInterviewPractice)
+        val btnStarBuilder = findViewById<Button>(R.id.btnStarBuilder)
+        val btnBulletRewriter = findViewById<Button>(R.id.btnBulletRewriter)
+        val btnSavedReports = findViewById<Button>(R.id.btnSavedReports)
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        btnResumeReview.setOnClickListener {
+            startActivity(Intent(this, ResumeInputActivity::class.java))
         }
 
-        setSupportActionBar(binding.toolbar)
-
-        val navHostFragment =
-            supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main) as NavHostFragment
-
-        val navController = navHostFragment.navController
-
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
+        btnInterviewPractice.setOnClickListener {
+            startActivity(Intent(this, InterviewPracticeActivity::class.java))
         }
-    }
 
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        return navController.navigateUp(appBarConfiguration)
-                || super.onSupportNavigateUp()
+        btnStarBuilder.setOnClickListener {
+            startActivity(Intent(this, StarBuilderActivity::class.java))
+        }
+
+        btnBulletRewriter.setOnClickListener {
+            startActivity(Intent(this, BulletRewriterActivity::class.java))
+        }
+
+        btnSavedReports.setOnClickListener {
+            startActivity(Intent(this, SavedReportsActivity::class.java))
+        }
     }
 }
