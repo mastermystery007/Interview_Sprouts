@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.math.roundToInt
 
@@ -24,6 +25,7 @@ class ResumeReportActivity : AppCompatActivity() {
         val textBasicFeedback = findViewById<TextView>(R.id.textBasicFeedback)
         val textMissingKeywordsHook = findViewById<TextView>(R.id.textMissingKeywordsHook)
         val textFullReport = findViewById<TextView>(R.id.textFullReport)
+        val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
 
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
         val btnRewriteBullets = findViewById<Button>(R.id.btnRewriteBullets)
@@ -43,17 +45,45 @@ class ResumeReportActivity : AppCompatActivity() {
         textFullReport.text = report.fullReport
 
         btnUnlockFullReport.setOnClickListener {
-            textFullReport.visibility = View.VISIBLE
-            btnUnlockFullReport.visibility = View.GONE
+            AlertDialog.Builder(this)
+                .setTitle("Simulated Ad")
+                .setMessage("Ad finished. Continue to unlock the full resume report.")
+                .setPositiveButton("Continue") { _, _ ->
+                    textFullReport.visibility = View.VISIBLE
+                    btnUnlockFullReport.visibility = View.GONE
+                    textLockedReportMessage.visibility = View.GONE
+                }
+                .show()
         }
 
         btnRewriteBullets.setOnClickListener {
-            startActivity(Intent(this, BulletRewriterActivity::class.java))
+            val intent = Intent(this, BulletRewriterActivity::class.java)
+            intent.putStringArrayListExtra(
+                "resume_bullets",
+                ArrayList(extractResumeBullets(resumeText))
+            )
+            startActivity(intent)
         }
 
         btnInterviewQuestions.setOnClickListener {
             startActivity(Intent(this, InterviewPracticeActivity::class.java))
         }
+    }
+
+    private fun extractResumeBullets(resumeText: String): List<String> {
+        return resumeText
+            .lineSequence()
+            .map { line -> line.trim() }
+            .filter { line ->
+                line.startsWith("•") ||
+                    line.startsWith("-") ||
+                    line.startsWith("*") ||
+                    line.matches(Regex("^\\d+[.)]\\s+.+"))
+            }
+            .map { line -> line.removePrefix("•").removePrefix("-").removePrefix("*").trim() }
+            .filter { line -> line.length >= 10 }
+            .take(20)
+            .toList()
     }
 
     private fun createResumeReport(

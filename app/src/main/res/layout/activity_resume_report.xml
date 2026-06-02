@@ -66,12 +66,23 @@
             android:padding="14dp"
             android:layout_marginTop="18dp" />
 
+        <TextView
+            android:id="@+id/textLockedReportMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="#FFF4D6"
+            android:padding="14dp"
+            android:text="Full report is locked. Watch a simulated ad to continue."
+            android:textColor="#333333"
+            android:textSize="15sp" />
+
         <Button
             android:id="@+id/btnUnlockFullReport"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Watch Ad to Unlock Full Report"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="12dp" />
 
         <TextView
             android:id="@+id/textFullReport"

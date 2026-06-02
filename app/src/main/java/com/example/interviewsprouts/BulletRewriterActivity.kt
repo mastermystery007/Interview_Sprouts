@@ -1,6 +1,7 @@
 package com.example.interviewsprouts
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -9,6 +10,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
 class BulletRewriterActivity : AppCompatActivity() {
+
+    private companion object {
+        const val EXTRA_RESUME_BULLETS = "resume_bullets"
+    }
 
     private val professions = listOf(
         "Software Engineer",
@@ -30,9 +35,12 @@ class BulletRewriterActivity : AppCompatActivity() {
         setContentView(R.layout.activity_bullet_rewriter)
 
         val bulletInput = findViewById<EditText>(R.id.editWeakBullet)
+        val resumeBulletSpinner = findViewById<Spinner>(R.id.spinnerResumeBullets)
+        val bulletSourceStatus = findViewById<TextView>(R.id.textBulletSourceStatus)
         val professionSpinner = findViewById<Spinner>(R.id.spinnerProfession)
         val rewriteButton = findViewById<Button>(R.id.btnRewriteBullet)
         val outputText = findViewById<TextView>(R.id.textRewriteOutput)
+        val extractedResumeBullets = intent.getStringArrayListExtra(EXTRA_RESUME_BULLETS).orEmpty()
 
         val adapter = ArrayAdapter(
             this,
@@ -43,14 +51,47 @@ class BulletRewriterActivity : AppCompatActivity() {
         }
         professionSpinner.adapter = adapter
 
+        if (extractedResumeBullets.isNotEmpty()) {
+            val resumeBulletAdapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                extractedResumeBullets
+            ).also {
+                it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            resumeBulletSpinner.adapter = resumeBulletAdapter
+            resumeBulletSpinner.visibility = View.VISIBLE
+            bulletInput.visibility = View.VISIBLE
+            bulletInput.hint = "Optional: paste/edit a bullet manually to override selected bullet"
+            bulletSourceStatus.text =
+                "Found resume bullets. Select one below, or paste/edit a bullet manually to override it."
+        } else {
+            resumeBulletSpinner.visibility = View.GONE
+            bulletInput.visibility = View.VISIBLE
+            bulletSourceStatus.text = "No clear resume bullets detected. Paste a bullet manually."
+        }
+
         rewriteButton.setOnClickListener {
-            val weakBullet = bulletInput.text.toString().trim()
+            val manualBullet = bulletInput.text.toString().trim()
+            val weakBullet = when {
+                manualBullet.isNotBlank() -> manualBullet
+                extractedResumeBullets.isNotEmpty() -> resumeBulletSpinner.selectedItem.toString().trim()
+                else -> ""
+            }
+
+            if (weakBullet.isBlank()) {
+                bulletInput.error = "Paste a bullet manually."
+                outputText.text = "Please paste a resume bullet before rewriting."
+                return@setOnClickListener
+            }
+
             if (weakBullet.length < 10) {
                 bulletInput.error = "Enter a bullet with at least 10 characters."
                 outputText.text = "Please enter a resume bullet with at least 10 characters."
                 return@setOnClickListener
             }
 
+            bulletInput.error = null
             val profession = professionSpinner.selectedItem.toString()
             outputText.text = buildRewriteOutput(weakBullet, profession)
         }
