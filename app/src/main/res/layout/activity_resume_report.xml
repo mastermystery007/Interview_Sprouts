@@ -66,12 +66,23 @@
             android:padding="14dp"
             android:layout_marginTop="18dp" />
 
+        <TextView
+            android:id="@+id/textLockedReportMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="#F7F7F7"
+            android:padding="14dp"
+            android:text="Full bullet rewrites, detailed scoring, and interview questions are locked. Watch an ad to unlock."
+            android:textColor="#111111"
+            android:textSize="15sp" />
+
         <Button
             android:id="@+id/btnUnlockFullReport"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Watch Ad to Unlock Full Report"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="12dp" />
 
         <TextView
             android:id="@+id/textFullReport"
@@ -94,6 +105,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Generate Interview Questions"
+            android:layout_marginTop="12dp" />
+
+        <Button
+            android:id="@+id/btnSaveReport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Report Locally"
             android:layout_marginTop="12dp" />
 
     </LinearLayout>

@@ -1,10 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".StarBuilderActivity">
+    android:background="#FFFFFF"
+    android:fillViewport="true">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="STAR Answer Builder"
+            android:textColor="#111111"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="STAR means Situation, Task, Action, Result. Add a rough story and the app will structure it into an interview-ready answer."
+            android:textColor="#111111"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/editRoughStory"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:layout_marginTop="20dp"
+            android:background="#F7F7F7"
+            android:gravity="top|start"
+            android:hint="Example: I helped my team finish a project after a teammate missed a deadline..."
+            android:inputType="textMultiLine|textCapSentences"
+            android:padding="12dp"
+            android:textColor="#111111"
+            android:textColorHint="#777777" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Answer Type"
+            android:textColor="#111111"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerAnswerType"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="#F7F7F7"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btnBuildStarAnswer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Build STAR Answer" />
+
+        <TextView
+            android:id="@+id/textStarOutput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Your STAR answer will appear here."
+            android:textColor="#111111"
+            android:textIsSelectable="true"
+            android:textSize="15sp" />
+
+    </LinearLayout>
+</ScrollView>
