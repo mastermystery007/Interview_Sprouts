@@ -38,6 +38,23 @@
             android:background="#F7F7F7"
             android:padding="8dp" />
 
+        <TextView
+            android:id="@+id/textBulletSourceStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="No clear resume bullets detected. Paste a bullet manually."
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="15sp" />
+
+        <Spinner
+            android:id="@+id/spinnerResumeBullets"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:visibility="gone" />
+
         <EditText
             android:id="@+id/editWeakBullet"
             android:layout_width="match_parent"

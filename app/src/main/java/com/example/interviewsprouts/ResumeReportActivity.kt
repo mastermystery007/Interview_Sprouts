@@ -31,6 +31,7 @@ class ResumeReportActivity : AppCompatActivity() {
         val textBasicFeedback = findViewById<TextView>(R.id.textBasicFeedback)
         val textMissingKeywordsHook = findViewById<TextView>(R.id.textMissingKeywordsHook)
         val textFullReport = findViewById<TextView>(R.id.textFullReport)
+        val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
 
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
         val btnRewriteBullets = findViewById<Button>(R.id.btnRewriteBullets)
@@ -104,6 +105,22 @@ class ResumeReportActivity : AppCompatActivity() {
 
         reports.put(savedReport)
         prefs.edit().putString(SavedReportsActivity.KEY_REPORTS, reports.toString()).apply()
+    }
+
+    private fun extractResumeBullets(resumeText: String): List<String> {
+        return resumeText
+            .lineSequence()
+            .map { line -> line.trim() }
+            .filter { line ->
+                line.startsWith("•") ||
+                    line.startsWith("-") ||
+                    line.startsWith("*") ||
+                    line.matches(Regex("^\\d+[.)]\\s+.+"))
+            }
+            .map { line -> line.removePrefix("•").removePrefix("-").removePrefix("*").trim() }
+            .filter { line -> line.length >= 10 }
+            .take(20)
+            .toList()
     }
 
     private fun createResumeReport(
