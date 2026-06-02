@@ -1,50 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground"
-    android:fillViewport="true"
-    tools:context=".BulletRewriterActivity">
+    android:background="#FFFFFF"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="20dp">
 
         <TextView
             android:id="@+id/textBulletRewriterTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Bullet Rewriter"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="#111111"
             android:textSize="28sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/textBulletRewriterInstructions"
+            android:id="@+id/textBulletSourceStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Paste a weak resume bullet, choose a target profession, and get an offline rewrite with stronger wording and metric ideas."
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="16sp" />
+            android:text="Select an extracted resume bullet or paste one manually."
+            android:textColor="#111111"
+            android:textSize="15sp" />
+
+        <Spinner
+            android:id="@+id/spinnerResumeBullets"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:background="#F7F7F7"
+            android:padding="8dp" />
 
         <EditText
             android:id="@+id/editWeakBullet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
             android:autofillHints=""
+            android:background="#F7F7F7"
             android:gravity="top|start"
             android:hint="Example: Helped with reports for the team"
             android:inputType="textMultiLine|textCapSentences"
             android:minHeight="120dp"
             android:padding="12dp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="?android:attr/textColorHint" />
+            android:textColor="#111111"
+            android:textColorHint="#777777" />
 
         <TextView
             android:id="@+id/textProfessionLabel"
@@ -52,16 +59,17 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="Target profession"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="16sp"
+            android:textColor="#111111"
+            android:textSize="15sp"
             android:textStyle="bold" />
 
         <Spinner
             android:id="@+id/spinnerProfession"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginTop="8dp"
-            android:minHeight="48dp" />
+            android:background="#F7F7F7"
+            android:padding="8dp" />
 
         <Button
             android:id="@+id/btnRewriteBullet"
@@ -77,9 +85,9 @@
             android:layout_marginTop="24dp"
             android:lineSpacingExtra="4dp"
             android:text="Your rewritten bullet will appear here."
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="#111111"
             android:textIsSelectable="true"
-            android:textSize="16sp" />
+            android:textSize="15sp" />
 
     </LinearLayout>
 </ScrollView>
