@@ -25,23 +25,6 @@
             android:id="@+id/textBulletSourceStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Select an extracted resume bullet or paste one manually."
-            android:textColor="#111111"
-            android:textSize="15sp" />
-
-        <Spinner
-            android:id="@+id/spinnerResumeBullets"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:background="#F7F7F7"
-            android:padding="8dp" />
-
-        <TextView
-            android:id="@+id/textBulletSourceStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:text="No clear resume bullets detected. Paste a bullet manually."
             android:textColor="?android:attr/textColorSecondary"
@@ -50,9 +33,11 @@
         <Spinner
             android:id="@+id/spinnerResumeBullets"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_marginTop="8dp"
+            android:background="#F7F7F7"
             android:minHeight="48dp"
+            android:padding="8dp"
             android:visibility="gone" />
 
         <EditText
