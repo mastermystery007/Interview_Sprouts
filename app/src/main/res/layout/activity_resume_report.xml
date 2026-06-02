@@ -23,7 +23,7 @@
             android:id="@+id/textTargetRole"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Target Role: Software Engineer"
+            android:text="Target Role"
             android:textSize="15sp"
             android:layout_marginTop="8dp" />
 

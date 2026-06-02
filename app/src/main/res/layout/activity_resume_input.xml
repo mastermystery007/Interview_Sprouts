@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Paste your resume text or upload a PDF."
+            android:text="Upload your resume PDF or paste resume text. Add a target role and job specification for better feedback."
             android:textSize="15sp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="20dp" />
@@ -32,6 +32,29 @@
             android:layout_height="wrap_content"
             android:text="Upload Resume PDF" />
 
+        <TextView
+            android:id="@+id/textAttachedFile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No file attached"
+            android:textSize="14sp"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/textExtractionStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="You can also paste your resume text manually below."
+            android:textSize="13sp"
+            android:layout_marginTop="4dp" />
+
+        <Button
+            android:id="@+id/btnToggleExtractedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Preview / Edit Resume Text"
+            android:layout_marginTop="12dp" />
+
         <EditText
             android:id="@+id/editResumeText"
             android:layout_width="match_parent"
@@ -41,13 +64,13 @@
             android:inputType="textMultiLine"
             android:padding="12dp"
             android:background="@android:drawable/edit_text"
-            android:layout_marginTop="16dp" />
+            android:layout_marginTop="12dp" />
 
         <EditText
             android:id="@+id/editTargetRole"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Target role, e.g. Software Engineer"
+            android:hint="Target role, e.g. Business Analyst, Marketing Executive, Software Engineer"
             android:inputType="text"
             android:layout_marginTop="16dp" />
 
@@ -55,9 +78,27 @@
             android:id="@+id/editExperienceLevel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Experience level, e.g. Fresh Graduate"
+            android:hint="Experience level, e.g. Student, Fresh Graduate, Mid-level"
             android:inputType="text"
             android:layout_marginTop="12dp" />
+
+        <EditText
+            android:id="@+id/editJobSpecification"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="top"
+            android:hint="Optional: Paste job specification / job description here for missing keyword suggestions..."
+            android:inputType="textMultiLine"
+            android:padding="12dp"
+            android:background="@android:drawable/edit_text"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tip: Job specifications help the app find missing skills, tools, keywords, and responsibilities for the exact role."
+            android:textSize="12sp"
+            android:layout_marginTop="10dp" />
 
         <TextView
             android:layout_width="match_parent"
