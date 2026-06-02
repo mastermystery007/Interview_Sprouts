@@ -58,6 +58,7 @@ class ResumeReportActivity : AppCompatActivity() {
                 .setPositiveButton("Continue") { _, _ ->
                     textFullReport.visibility = View.VISIBLE
                     btnUnlockFullReport.visibility = View.GONE
+                    textLockedReportMessage.visibility = View.GONE
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
