@@ -5,8 +5,14 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONArray
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.roundToInt
 
 class ResumeReportActivity : AppCompatActivity() {
@@ -30,6 +36,7 @@ class ResumeReportActivity : AppCompatActivity() {
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
         val btnRewriteBullets = findViewById<Button>(R.id.btnRewriteBullets)
         val btnInterviewQuestions = findViewById<Button>(R.id.btnInterviewQuestions)
+        val btnSaveReport = findViewById<Button>(R.id.btnSaveReport)
 
         val report = createResumeReport(
             resumeText = resumeText,
@@ -47,27 +54,57 @@ class ResumeReportActivity : AppCompatActivity() {
         btnUnlockFullReport.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Simulated Ad")
-                .setMessage("Ad finished. Continue to unlock the full resume report.")
+                .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock the full report.")
                 .setPositiveButton("Continue") { _, _ ->
                     textFullReport.visibility = View.VISIBLE
                     btnUnlockFullReport.visibility = View.GONE
-                    textLockedReportMessage.visibility = View.GONE
                 }
+                .setNegativeButton("Cancel", null)
                 .show()
         }
 
         btnRewriteBullets.setOnClickListener {
             val intent = Intent(this, BulletRewriterActivity::class.java)
-            intent.putStringArrayListExtra(
-                "resume_bullets",
-                ArrayList(extractResumeBullets(resumeText))
-            )
+            intent.putExtra("resume_text", resumeText)
+            intent.putExtra("target_role", targetRole)
             startActivity(intent)
         }
 
         btnInterviewQuestions.setOnClickListener {
-            startActivity(Intent(this, InterviewPracticeActivity::class.java))
+            val intent = Intent(this, InterviewPracticeActivity::class.java)
+            intent.putExtra("target_role", targetRole)
+            startActivity(intent)
         }
+
+        btnSaveReport.setOnClickListener {
+            saveReportLocally(
+                targetRole = targetRole,
+                experienceLevel = experienceLevel,
+                report = report
+            )
+            Toast.makeText(this, "Report saved locally on this device.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun saveReportLocally(
+        targetRole: String,
+        experienceLevel: String,
+        report: ResumeReportResult
+    ) {
+        val prefs = getSharedPreferences(SavedReportsActivity.PREFS_NAME, MODE_PRIVATE)
+        val reports = JSONArray(prefs.getString(SavedReportsActivity.KEY_REPORTS, "[]") ?: "[]")
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+
+        val savedReport = JSONObject()
+            .put("target_role", targetRole)
+            .put("experience_level", experienceLevel)
+            .put("overall_score", report.overallScore)
+            .put("basic_feedback", report.basicFeedback)
+            .put("full_report", report.fullReport)
+            .put("timestamp", timestamp)
+
+        reports.put(savedReport)
+        prefs.edit().putString(SavedReportsActivity.KEY_REPORTS, reports.toString()).apply()
     }
 
     private fun extractResumeBullets(resumeText: String): List<String> {

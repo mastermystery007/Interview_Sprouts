@@ -34,6 +34,10 @@ class BulletRewriterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_bullet_rewriter)
 
+        val resumeText = intent.getStringExtra("resume_text") ?: ""
+        val targetRole = intent.getStringExtra("target_role") ?: ""
+        val sourceStatus = findViewById<TextView>(R.id.textBulletSourceStatus)
+        val resumeBulletSpinner = findViewById<Spinner>(R.id.spinnerResumeBullets)
         val bulletInput = findViewById<EditText>(R.id.editWeakBullet)
         val resumeBulletSpinner = findViewById<Spinner>(R.id.spinnerResumeBullets)
         val bulletSourceStatus = findViewById<TextView>(R.id.textBulletSourceStatus)
@@ -42,14 +46,28 @@ class BulletRewriterActivity : AppCompatActivity() {
         val outputText = findViewById<TextView>(R.id.textRewriteOutput)
         val extractedResumeBullets = intent.getStringArrayListExtra(EXTRA_RESUME_BULLETS).orEmpty()
 
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            professions
-        ).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        val professionAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, professions)
+        professionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        professionSpinner.adapter = professionAdapter
+
+        val selectedRoleIndex = professions.indexOfFirst { it.equals(targetRole, ignoreCase = true) }
+        if (selectedRoleIndex >= 0) {
+            professionSpinner.setSelection(selectedRoleIndex)
         }
-        professionSpinner.adapter = adapter
+
+        val extractedBullets = extractCandidateBullets(resumeText)
+        if (extractedBullets.isNotEmpty()) {
+            sourceStatus.text = "Found ${extractedBullets.size} likely resume bullet(s). Select one below or edit manually if needed."
+            resumeBulletSpinner.visibility = View.VISIBLE
+            bulletInput.visibility = View.GONE
+            val bulletAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, extractedBullets)
+            bulletAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            resumeBulletSpinner.adapter = bulletAdapter
+        } else {
+            sourceStatus.text = "No resume bullet was detected from the report flow. Paste a bullet manually below."
+            resumeBulletSpinner.visibility = View.GONE
+            bulletInput.visibility = View.VISIBLE
+        }
 
         if (extractedResumeBullets.isNotEmpty()) {
             val resumeBulletAdapter = ArrayAdapter(
@@ -72,22 +90,15 @@ class BulletRewriterActivity : AppCompatActivity() {
         }
 
         rewriteButton.setOnClickListener {
-            val manualBullet = bulletInput.text.toString().trim()
-            val weakBullet = when {
-                manualBullet.isNotBlank() -> manualBullet
-                extractedResumeBullets.isNotEmpty() -> resumeBulletSpinner.selectedItem.toString().trim()
-                else -> ""
-            }
-
-            if (weakBullet.isBlank()) {
-                bulletInput.error = "Paste a bullet manually."
-                outputText.text = "Please paste a resume bullet before rewriting."
-                return@setOnClickListener
+            val weakBullet = if (extractedBullets.isNotEmpty()) {
+                resumeBulletSpinner.selectedItem?.toString()?.trim() ?: ""
+            } else {
+                bulletInput.text.toString().trim()
             }
 
             if (weakBullet.length < 10) {
                 bulletInput.error = "Enter a bullet with at least 10 characters."
-                outputText.text = "Please enter a resume bullet with at least 10 characters."
+                outputText.text = "Please enter or select a resume bullet with at least 10 characters."
                 return@setOnClickListener
             }
 
@@ -97,10 +108,37 @@ class BulletRewriterActivity : AppCompatActivity() {
         }
     }
 
+    private fun extractCandidateBullets(resumeText: String): List<String> {
+        val actionWords = listOf(
+            "worked", "built", "developed", "analyzed", "managed", "created", "implemented",
+            "improved", "designed", "coordinated", "led", "generated", "optimized", "handled", "supported"
+        )
+        val seen = linkedSetOf<String>()
+
+        resumeText.lineSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .forEach { line ->
+                val startsLikeBullet = line.startsWith("-") || line.startsWith("•") || line.startsWith("*")
+                val words = line.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                val hasActionWord = actionWords.any { actionWord ->
+                    line.contains(Regex("\\b${Regex.escape(actionWord)}\\b", RegexOption.IGNORE_CASE))
+                }
+
+                if (startsLikeBullet || (words.size in 5..35 && hasActionWord)) {
+                    seen.add(line.removePrefix("-").removePrefix("•").removePrefix("*").trim())
+                }
+            }
+
+        return seen.take(20)
+    }
+
     private fun buildRewriteOutput(input: String, profession: String): String {
         val profile = profileForProfession(profession)
         val cleanedInput = input
             .removePrefix("•")
+            .removePrefix("-")
+            .removePrefix("*")
             .trim()
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
@@ -109,125 +147,30 @@ class BulletRewriterActivity : AppCompatActivity() {
             • ${profile.primaryVerb} $cleanedInput while applying ${profile.focusPhrase} to improve ${profile.outcomePhrase}.
 
             Metric Version:
-            • ${profile.metricVerb} $cleanedInput, contributing to measurable gains such as [X% improvement], [Y hours saved], or [Z stakeholders/users/customers supported] through ${profile.metricPhrase}.
+            • ${profile.metricVerb} $cleanedInput, contributing to measurable gains such as [X% improvement], [number] ${profile.metricNoun}, or [hours] saved through ${profile.metricPhrase}.
 
             Suggested Action Verbs:
             • ${profile.actionVerbs.joinToString(", ")}
 
             Truth Warning:
-            Only use metrics and responsibilities that are true.
+            Only use metrics, tools, responsibilities, and outcomes that are true. Replace placeholders like [X%], [number], and [hours] only with real details you can explain in an interview.
         """.trimIndent()
     }
 
     private fun profileForProfession(profession: String): RewriteProfile {
         return when (profession) {
-            "Software Engineer" -> RewriteProfile(
-                primaryVerb = "Developed and implemented",
-                metricVerb = "Optimized",
-                focusPhrase = "API, system, and performance best practices",
-                outcomePhrase = "reliability, scalability, and user experience",
-                metricPhrase = "performance tuning and system improvements",
-                actionVerbs = listOf("Developed", "Implemented", "Optimized", "Integrated", "Automated")
-            )
-
-            "Data Analyst" -> RewriteProfile(
-                primaryVerb = "Analyzed and translated",
-                metricVerb = "Built dashboard-driven insights from",
-                focusPhrase = "SQL/Excel/Python analysis, dashboards, insights, and trends",
-                outcomePhrase = "decision-making and reporting accuracy",
-                metricPhrase = "trend analysis and stakeholder reporting",
-                actionVerbs = listOf("Analyzed", "Visualized", "Reported", "Identified", "Automated")
-            )
-
-            "Business Analyst" -> RewriteProfile(
-                primaryVerb = "Documented and improved",
-                metricVerb = "Streamlined",
-                focusPhrase = "requirements gathering, stakeholder alignment, process gaps, UAT, and workflows",
-                outcomePhrase = "business clarity and delivery readiness",
-                metricPhrase = "workflow mapping and UAT coordination",
-                actionVerbs = listOf("Gathered", "Documented", "Mapped", "Validated", "Facilitated")
-            )
-
-            "Marketing Executive", "Digital Marketing Specialist" -> RewriteProfile(
-                primaryVerb = "Executed and improved",
-                metricVerb = "Increased campaign impact for",
-                focusPhrase = "campaign optimization, conversion, CTR, leads, and brand awareness",
-                outcomePhrase = "audience engagement and marketing performance",
-                metricPhrase = "conversion tracking and lead-generation improvements",
-                actionVerbs = listOf("Launched", "Optimized", "Converted", "Generated", "Promoted")
-            )
-
-            "Product Manager" -> RewriteProfile(
-                primaryVerb = "Prioritized and shaped",
-                metricVerb = "Improved product outcomes for",
-                focusPhrase = "roadmap planning, user feedback, prioritization, and feature planning",
-                outcomePhrase = "customer value and product alignment",
-                metricPhrase = "roadmap tradeoffs and user feedback analysis",
-                actionVerbs = listOf("Prioritized", "Defined", "Launched", "Validated", "Coordinated")
-            )
-
-            "Finance Analyst" -> RewriteProfile(
-                primaryVerb = "Performed financial analysis for",
-                metricVerb = "Improved forecasting visibility for",
-                focusPhrase = "forecasting, variance analysis, cost control, and revenue insights",
-                outcomePhrase = "budget accuracy and financial planning",
-                metricPhrase = "variance tracking and cost/revenue analysis",
-                actionVerbs = listOf("Forecasted", "Analyzed", "Modeled", "Reconciled", "Reported")
-            )
-
-            "Sales Executive" -> RewriteProfile(
-                primaryVerb = "Managed and advanced",
-                metricVerb = "Expanded pipeline results for",
-                focusPhrase = "leads, CRM updates, pipeline tracking, client follow-up, and revenue growth",
-                outcomePhrase = "client relationships and sales opportunities",
-                metricPhrase = "CRM discipline and pipeline management",
-                actionVerbs = listOf("Prospected", "Negotiated", "Closed", "Generated", "Managed")
-            )
-
-            "Operations Analyst" -> RewriteProfile(
-                primaryVerb = "Improved and monitored",
-                metricVerb = "Reduced operational friction in",
-                focusPhrase = "process improvement, workflow analysis, cost reduction, and efficiency",
-                outcomePhrase = "operational consistency and team productivity",
-                metricPhrase = "workflow optimization and efficiency tracking",
-                actionVerbs = listOf("Improved", "Streamlined", "Reduced", "Coordinated", "Measured")
-            )
-
-            "HR Executive" -> RewriteProfile(
-                primaryVerb = "Supported and strengthened",
-                metricVerb = "Improved people operations for",
-                focusPhrase = "recruitment, onboarding, employee engagement, and HR coordination",
-                outcomePhrase = "candidate experience and employee satisfaction",
-                metricPhrase = "hiring process and onboarding improvements",
-                actionVerbs = listOf("Recruited", "Onboarded", "Coordinated", "Engaged", "Supported")
-            )
-
-            "UX/UI Designer" -> RewriteProfile(
-                primaryVerb = "Designed and refined",
-                metricVerb = "Improved usability outcomes for",
-                focusPhrase = "user research, wireframes, prototypes, and usability testing",
-                outcomePhrase = "user flows, accessibility, and product usability",
-                metricPhrase = "prototype iteration and usability feedback",
-                actionVerbs = listOf("Designed", "Researched", "Prototyped", "Tested", "Iterated")
-            )
-
-            "Project Manager" -> RewriteProfile(
-                primaryVerb = "Coordinated and delivered",
-                metricVerb = "Improved delivery predictability for",
-                focusPhrase = "timelines, stakeholder communication, delivery planning, and risk management",
-                outcomePhrase = "on-time execution and cross-functional alignment",
-                metricPhrase = "timeline tracking and risk mitigation",
-                actionVerbs = listOf("Delivered", "Coordinated", "Planned", "Mitigated", "Aligned")
-            )
-
-            else -> RewriteProfile(
-                primaryVerb = "Improved",
-                metricVerb = "Strengthened",
-                focusPhrase = "clear ownership, collaboration, and measurable outcomes",
-                outcomePhrase = "team results",
-                metricPhrase = "structured execution",
-                actionVerbs = listOf("Improved", "Led", "Delivered", "Coordinated", "Supported")
-            )
+            "Software Engineer" -> RewriteProfile("Developed and implemented", "Optimized", "API, debugging, testing, performance, and system design practices", "reliability, scalability, and user experience", "performance tuning and system improvements", "features/users/errors resolved", listOf("Developed", "Implemented", "Debugged", "Tested", "Optimized"))
+            "Data Analyst" -> RewriteProfile("Analyzed and translated", "Built dashboard-driven insights from", "SQL, dashboarding, data cleaning, KPI tracking, and insight generation", "decision-making and reporting accuracy", "trend analysis and stakeholder reporting", "dashboards/reports/stakeholders supported", listOf("Analyzed", "Cleaned", "Visualized", "Reported", "Identified"))
+            "Business Analyst" -> RewriteProfile("Documented and improved", "Streamlined", "requirements gathering, stakeholder alignment, UAT, and process gap analysis", "business clarity and delivery readiness", "workflow mapping and UAT coordination", "requirements/processes/stakeholders supported", listOf("Gathered", "Documented", "Mapped", "Validated", "Facilitated"))
+            "Marketing Executive", "Digital Marketing Specialist" -> RewriteProfile("Executed and improved", "Increased campaign impact for", "campaign optimization, CTR, conversion, SEO, lead generation, and audience analysis", "audience engagement and marketing performance", "conversion tracking and lead-generation improvements", "campaigns/leads/conversions", listOf("Launched", "Optimized", "Converted", "Generated", "Promoted"))
+            "Product Manager" -> RewriteProfile("Prioritized and shaped", "Improved product outcomes for", "roadmap planning, prioritization, user feedback, and product metrics", "customer value and product alignment", "roadmap tradeoffs and user feedback analysis", "features/users/stakeholders", listOf("Prioritized", "Defined", "Launched", "Validated", "Coordinated"))
+            "Finance Analyst" -> RewriteProfile("Performed financial analysis for", "Improved forecasting visibility for", "forecasting, budgeting, variance analysis, and financial modeling", "budget accuracy and financial planning", "variance tracking and cost/revenue analysis", "models/reports/business units", listOf("Forecasted", "Analyzed", "Modeled", "Reconciled", "Reported"))
+            "Sales Executive" -> RewriteProfile("Managed and advanced", "Expanded pipeline results for", "lead generation, CRM updates, pipeline tracking, negotiation, and revenue growth", "client relationships and sales opportunities", "CRM discipline and pipeline management", "leads/accounts/opportunities", listOf("Prospected", "Negotiated", "Closed", "Generated", "Managed"))
+            "Operations Analyst" -> RewriteProfile("Improved and monitored", "Reduced operational friction in", "workflow analysis, cost reduction, efficiency tracking, and process improvement", "operational consistency and team productivity", "workflow optimization and efficiency tracking", "workflows/processes/teams", listOf("Improved", "Streamlined", "Reduced", "Coordinated", "Measured"))
+            "HR Executive" -> RewriteProfile("Supported and strengthened", "Improved people operations for", "recruitment, onboarding, screening, employee engagement, and HR coordination", "candidate experience and employee satisfaction", "hiring process and onboarding improvements", "candidates/employees/roles", listOf("Recruited", "Onboarded", "Screened", "Engaged", "Supported"))
+            "UX/UI Designer" -> RewriteProfile("Designed and refined", "Improved usability outcomes for", "user research, wireframes, prototypes, and usability testing", "user flows, accessibility, and product usability", "prototype iteration and usability feedback", "screens/prototypes/users tested", listOf("Designed", "Researched", "Prototyped", "Tested", "Iterated"))
+            "Project Manager" -> RewriteProfile("Coordinated and delivered", "Improved delivery predictability for", "timelines, risk management, stakeholder communication, and delivery planning", "on-time execution and cross-functional alignment", "timeline tracking and risk mitigation", "milestones/risks/stakeholders", listOf("Delivered", "Coordinated", "Planned", "Mitigated", "Aligned"))
+            else -> RewriteProfile("Improved", "Strengthened", "clear ownership, collaboration, and measurable outcomes", "team results", "structured execution", "tasks/stakeholders/outcomes", listOf("Improved", "Led", "Delivered", "Coordinated", "Supported"))
         }
     }
 
@@ -237,6 +180,7 @@ class BulletRewriterActivity : AppCompatActivity() {
         val focusPhrase: String,
         val outcomePhrase: String,
         val metricPhrase: String,
+        val metricNoun: String,
         val actionVerbs: List<String>
     )
 }
