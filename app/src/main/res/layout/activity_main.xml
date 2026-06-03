@@ -35,27 +35,6 @@
             android:text="Resume Review" />
 
         <Button
-            android:id="@+id/btnInterviewPractice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Interview Practice"
-            android:layout_marginTop="12dp" />
-
-        <Button
-            android:id="@+id/btnStarBuilder"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="STAR Answer Builder"
-            android:layout_marginTop="12dp" />
-
-        <Button
-            android:id="@+id/btnBulletRewriter"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Bullet Rewriter"
-            android:layout_marginTop="12dp" />
-
-        <Button
             android:id="@+id/btnSavedReports"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

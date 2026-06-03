@@ -35,23 +35,31 @@ class BulletRewriterActivity : AppCompatActivity() {
         val bulletSourceStatus = findViewById<TextView>(R.id.textBulletSourceStatus)
         val resumeBulletSpinner = findViewById<Spinner>(R.id.spinnerResumeBullets)
         val bulletInput = findViewById<EditText>(R.id.editWeakBullet)
+        val professionLabel = findViewById<TextView>(R.id.textProfessionLabel)
         val professionSpinner = findViewById<Spinner>(R.id.spinnerProfession)
         val rewriteButton = findViewById<Button>(R.id.btnRewriteBullet)
         val outputText = findViewById<TextView>(R.id.textRewriteOutput)
 
-        val professionAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, professions)
-        professionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        val professionAdapter = ArrayAdapter(this, R.layout.spinner_item, professions)
+        professionAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         professionSpinner.adapter = professionAdapter
 
         val selectedRoleIndex = professions.indexOfFirst { it.equals(targetRole, ignoreCase = true) }
-        if (selectedRoleIndex >= 0) {
-            professionSpinner.setSelection(selectedRoleIndex)
+        if (targetRole.isNotBlank()) {
+            professionLabel.visibility = View.GONE
+            professionSpinner.visibility = View.GONE
+            if (selectedRoleIndex >= 0) {
+                professionSpinner.setSelection(selectedRoleIndex)
+            }
+        } else {
+            professionLabel.visibility = View.VISIBLE
+            professionSpinner.visibility = View.VISIBLE
         }
 
         val extractedBullets = extractCandidateBullets(resumeText)
         if (extractedBullets.isNotEmpty()) {
-            val bulletAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, extractedBullets)
-            bulletAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            val bulletAdapter = ArrayAdapter(this, R.layout.spinner_item, extractedBullets)
+            bulletAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
             resumeBulletSpinner.adapter = bulletAdapter
             resumeBulletSpinner.visibility = View.VISIBLE
             bulletInput.visibility = View.VISIBLE
@@ -86,7 +94,7 @@ class BulletRewriterActivity : AppCompatActivity() {
             }
 
             bulletInput.error = null
-            val profession = professionSpinner.selectedItem.toString()
+            val profession = targetRole.ifBlank { professionSpinner.selectedItem.toString() }
             outputText.text = buildRewriteOutput(weakBullet, profession)
         }
     }
@@ -94,7 +102,8 @@ class BulletRewriterActivity : AppCompatActivity() {
     private fun extractCandidateBullets(resumeText: String): List<String> {
         val actionWords = listOf(
             "worked", "built", "developed", "analyzed", "managed", "created", "implemented",
-            "improved", "designed", "coordinated", "led", "generated", "optimized", "handled", "supported"
+            "improved", "designed", "coordinated", "led", "generated", "optimized",
+            "handled", "supported", "assisted", "documented", "launched"
         )
         val seen = linkedSetOf<String>()
 
@@ -105,7 +114,7 @@ class BulletRewriterActivity : AppCompatActivity() {
                 val startsLikeBullet = line.startsWith("-") || line.startsWith("•") || line.startsWith("*")
                 val words = line.split("\\s+".toRegex()).filter { it.isNotBlank() }
                 val hasActionWord = actionWords.any { actionWord ->
-                    line.contains(Regex("\\b${Regex.escape(actionWord)}\\b", RegexOption.IGNORE_CASE))
+                    line.contains(Regex("""\b${Regex.escape(actionWord)}\b""", RegexOption.IGNORE_CASE))
                 }
 
                 if (startsLikeBullet || (words.size in 5..35 && hasActionWord)) {
@@ -118,52 +127,88 @@ class BulletRewriterActivity : AppCompatActivity() {
 
     private fun buildRewriteOutput(input: String, profession: String): String {
         val profile = profileForProfession(profession)
-        val cleanedInput = input
+        val cleanedInput = cleanBulletTask(input)
+        val suggestedVerbs = profile.actionVerbs.distinct().joinToString("\n") { "• $it" }
+
+        return """
+            Improved Bullet:
+            • ${profile.primaryVerb} $cleanedInput to improve ${profile.outcomePhrase}.
+
+            Metric Version:
+            • ${profile.metricVerb} $cleanedInput, contributing to measurable gains such as ${profile.metricPlaceholders}.
+
+            Suggested Action Verbs:
+            $suggestedVerbs
+
+            Truth Warning:
+            Only use metrics and responsibilities that are true. Replace placeholders like [X%], [number], and [hours] only with real details you can explain in an interview.
+        """.trimIndent()
+    }
+
+    private fun cleanBulletTask(input: String): String {
+        var cleaned = input
+            .trim()
             .removePrefix("•")
             .removePrefix("-")
             .removePrefix("*")
             .trim()
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
-        return """
-            Improved Bullet:
-            • ${profile.primaryVerb} $cleanedInput while applying ${profile.focusPhrase} to improve ${profile.outcomePhrase}.
+        val weakPhrases = listOf(
+            "worked on",
+            "worked with",
+            "helped with",
+            "responsible for",
+            "handled",
+            "supported",
+            "assisted with",
+            "involved in",
+            "participated in",
+            "contributed to"
+        )
 
-            Metric Version:
-            • ${profile.metricVerb} $cleanedInput, contributing to measurable gains such as [X% improvement], [number] ${profile.metricNoun}, or [hours] saved through ${profile.metricPhrase}.
+        for (phrase in weakPhrases) {
+            cleaned = cleaned.replace(
+                Regex("""^${Regex.escape(phrase)}\b[:\-\s]*""", RegexOption.IGNORE_CASE),
+                ""
+            ).trim()
+        }
 
-            Suggested Action Verbs:
-            • ${profile.actionVerbs.joinToString(", ")}
+        if (cleaned.isBlank()) return "resume responsibilities"
 
-            Truth Warning:
-            Only use metrics, tools, responsibilities, and outcomes that are true. Replace placeholders like [X%], [number], and [hours] only with real details you can explain in an interview.
-        """.trimIndent()
+        cleaned = cleaned.replaceFirstChar { char ->
+            if (char.isUpperCase() && cleaned.getOrNull(1)?.isUpperCase() != true) {
+                char.lowercase()
+            } else {
+                char.toString()
+            }
+        }
+
+        return cleaned.ifBlank { "resume responsibilities" }
     }
 
     private fun profileForProfession(profession: String): RewriteProfile {
-        return when (profession) {
-            "Software Engineer" -> RewriteProfile("Developed and implemented", "Optimized", "API, debugging, testing, performance, and system design practices", "reliability, scalability, and user experience", "performance tuning and system improvements", "features/users/errors resolved", listOf("Developed", "Implemented", "Debugged", "Tested", "Optimized"))
-            "Data Analyst" -> RewriteProfile("Analyzed and translated", "Built dashboard-driven insights from", "SQL, dashboarding, data cleaning, KPI tracking, and insight generation", "decision-making and reporting accuracy", "trend analysis and stakeholder reporting", "dashboards/reports/stakeholders supported", listOf("Analyzed", "Cleaned", "Visualized", "Reported", "Identified"))
-            "Business Analyst" -> RewriteProfile("Documented and improved", "Streamlined", "requirements gathering, stakeholder alignment, UAT, and process gap analysis", "business clarity and delivery readiness", "workflow mapping and UAT coordination", "requirements/processes/stakeholders supported", listOf("Gathered", "Documented", "Mapped", "Validated", "Facilitated"))
-            "Marketing Executive", "Digital Marketing Specialist" -> RewriteProfile("Executed and improved", "Increased campaign impact for", "campaign optimization, CTR, conversion, SEO, lead generation, and audience analysis", "audience engagement and marketing performance", "conversion tracking and lead-generation improvements", "campaigns/leads/conversions", listOf("Launched", "Optimized", "Converted", "Generated", "Promoted"))
-            "Product Manager" -> RewriteProfile("Prioritized and shaped", "Improved product outcomes for", "roadmap planning, prioritization, user feedback, and product metrics", "customer value and product alignment", "roadmap tradeoffs and user feedback analysis", "features/users/stakeholders", listOf("Prioritized", "Defined", "Launched", "Validated", "Coordinated"))
-            "Finance Analyst" -> RewriteProfile("Performed financial analysis for", "Improved forecasting visibility for", "forecasting, budgeting, variance analysis, and financial modeling", "budget accuracy and financial planning", "variance tracking and cost/revenue analysis", "models/reports/business units", listOf("Forecasted", "Analyzed", "Modeled", "Reconciled", "Reported"))
-            "Sales Executive" -> RewriteProfile("Managed and advanced", "Expanded pipeline results for", "lead generation, CRM updates, pipeline tracking, negotiation, and revenue growth", "client relationships and sales opportunities", "CRM discipline and pipeline management", "leads/accounts/opportunities", listOf("Prospected", "Negotiated", "Closed", "Generated", "Managed"))
-            "Operations Analyst" -> RewriteProfile("Improved and monitored", "Reduced operational friction in", "workflow analysis, cost reduction, efficiency tracking, and process improvement", "operational consistency and team productivity", "workflow optimization and efficiency tracking", "workflows/processes/teams", listOf("Improved", "Streamlined", "Reduced", "Coordinated", "Measured"))
-            "HR Executive" -> RewriteProfile("Supported and strengthened", "Improved people operations for", "recruitment, onboarding, screening, employee engagement, and HR coordination", "candidate experience and employee satisfaction", "hiring process and onboarding improvements", "candidates/employees/roles", listOf("Recruited", "Onboarded", "Screened", "Engaged", "Supported"))
-            "UX/UI Designer" -> RewriteProfile("Designed and refined", "Improved usability outcomes for", "user research, wireframes, prototypes, and usability testing", "user flows, accessibility, and product usability", "prototype iteration and usability feedback", "screens/prototypes/users tested", listOf("Designed", "Researched", "Prototyped", "Tested", "Iterated"))
-            "Project Manager" -> RewriteProfile("Coordinated and delivered", "Improved delivery predictability for", "timelines, risk management, stakeholder communication, and delivery planning", "on-time execution and cross-functional alignment", "timeline tracking and risk mitigation", "milestones/risks/stakeholders", listOf("Delivered", "Coordinated", "Planned", "Mitigated", "Aligned"))
-            else -> RewriteProfile("Improved", "Strengthened", "clear ownership, collaboration, and measurable outcomes", "team results", "structured execution", "tasks/stakeholders/outcomes", listOf("Improved", "Led", "Delivered", "Coordinated", "Supported"))
+        val roleLower = profession.lowercase()
+        return when {
+            roleLower.contains("software engineer") -> RewriteProfile("Developed", "Optimized", "reliability, scalability, and user experience", "[X% improvement], [number] users/features, or [hours] saved", listOf("Developed", "Implemented", "Debugged", "Tested", "Optimized"))
+            roleLower.contains("data analyst") -> RewriteProfile("Analyzed", "Automated", "reporting accuracy, KPI visibility, and business insights", "[X% faster reporting], [number] dashboards, or [hours] saved", listOf("Analyzed", "Cleaned", "Visualized", "Reported", "Automated"))
+            roleLower.contains("business analyst") -> RewriteProfile("Documented", "Streamlined", "stakeholder alignment, requirement clarity, and process efficiency", "[X% fewer clarification cycles], [number] stakeholders, or [hours] saved", listOf("Gathered", "Documented", "Mapped", "Validated", "Streamlined"))
+            roleLower.contains("marketing") || roleLower.contains("digital marketing") -> RewriteProfile("Managed", "Optimized", "campaign performance, engagement, and lead generation", "[X% higher CTR], [number] leads, or [X% lower CPC]", listOf("Managed", "Launched", "Optimized", "Generated", "Converted"))
+            roleLower.contains("product manager") -> RewriteProfile("Prioritized", "Improved", "product clarity, roadmap alignment, and user value", "[number] users, [X% adoption], or [number] features shipped", listOf("Prioritized", "Defined", "Launched", "Validated", "Improved"))
+            roleLower.contains("finance analyst") -> RewriteProfile("Analyzed", "Improved", "forecasting accuracy, budgeting clarity, and financial decision-making", "[X% variance reduction], [amount] cost visibility, or [hours] saved", listOf("Analyzed", "Forecasted", "Modeled", "Reconciled", "Improved"))
+            roleLower.contains("sales executive") -> RewriteProfile("Managed", "Increased", "pipeline quality, client engagement, and revenue opportunities", "[number] leads, [X% conversion], or [amount] pipeline value", listOf("Managed", "Prospected", "Negotiated", "Generated", "Increased"))
+            roleLower.contains("operations analyst") -> RewriteProfile("Improved", "Reduced", "workflow efficiency, process consistency, and operational productivity", "[X% cost reduction], [hours] saved, or [number] processes improved", listOf("Improved", "Streamlined", "Reduced", "Coordinated", "Measured"))
+            roleLower.contains("hr executive") -> RewriteProfile("Supported", "Improved", "candidate experience, onboarding quality, and HR operations", "[X% faster hiring], [number] candidates, or [hours] saved", listOf("Supported", "Recruited", "Onboarded", "Screened", "Improved"))
+            roleLower.contains("ux") || roleLower.contains("ui") -> RewriteProfile("Designed", "Improved", "usability, user flows, and product experience", "[X% task completion], [number] screens, or [number] users tested", listOf("Designed", "Researched", "Prototyped", "Tested", "Improved"))
+            roleLower.contains("project manager") -> RewriteProfile("Coordinated", "Improved", "delivery predictability, stakeholder alignment, and risk visibility", "[number] milestones, [X% on-time delivery], or [hours] saved", listOf("Coordinated", "Delivered", "Planned", "Mitigated", "Improved"))
+            else -> RewriteProfile("Improved", "Strengthened", "clarity, execution, and measurable team outcomes", "[X% improvement], [number] outcomes, or [hours] saved", listOf("Improved", "Led", "Delivered", "Coordinated", "Strengthened"))
         }
     }
 
     private data class RewriteProfile(
         val primaryVerb: String,
         val metricVerb: String,
-        val focusPhrase: String,
         val outcomePhrase: String,
-        val metricPhrase: String,
-        val metricNoun: String,
+        val metricPlaceholders: String,
         val actionVerbs: List<String>
     )
 }
