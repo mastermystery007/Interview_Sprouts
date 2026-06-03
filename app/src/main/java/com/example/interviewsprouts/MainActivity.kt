@@ -12,25 +12,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val btnResumeReview = findViewById<Button>(R.id.btnResumeReview)
-        val btnInterviewPractice = findViewById<Button>(R.id.btnInterviewPractice)
-        val btnStarBuilder = findViewById<Button>(R.id.btnStarBuilder)
-        val btnBulletRewriter = findViewById<Button>(R.id.btnBulletRewriter)
         val btnSavedReports = findViewById<Button>(R.id.btnSavedReports)
 
         btnResumeReview.setOnClickListener {
             startActivity(Intent(this, ResumeInputActivity::class.java))
-        }
-
-        btnInterviewPractice.setOnClickListener {
-            startActivity(Intent(this, InterviewPracticeActivity::class.java))
-        }
-
-        btnStarBuilder.setOnClickListener {
-            startActivity(Intent(this, StarBuilderActivity::class.java))
-        }
-
-        btnBulletRewriter.setOnClickListener {
-            startActivity(Intent(this, BulletRewriterActivity::class.java))
         }
 
         btnSavedReports.setOnClickListener {

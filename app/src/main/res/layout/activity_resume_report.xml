@@ -93,19 +93,27 @@
             android:visibility="gone"
             android:layout_marginTop="20dp" />
 
-        <Button
-            android:id="@+id/btnRewriteBullets"
+        <TextView
+            android:id="@+id/textUnlockedBulletSuggestions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Rewrite Bullets"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="20dp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#111111"
+            android:textIsSelectable="true"
+            android:textSize="15sp"
+            android:visibility="gone" />
 
-        <Button
-            android:id="@+id/btnInterviewQuestions"
+        <TextView
+            android:id="@+id/textUnlockedInterviewQuestions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Generate Interview Questions"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="20dp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#111111"
+            android:textIsSelectable="true"
+            android:textSize="15sp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btnSaveReport"

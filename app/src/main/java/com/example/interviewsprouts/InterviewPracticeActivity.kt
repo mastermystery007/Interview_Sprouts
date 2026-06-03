@@ -47,8 +47,8 @@ class InterviewPracticeActivity : AppCompatActivity() {
     }
 
     private fun spinnerAdapter(items: List<String>): ArrayAdapter<String> {
-        return ArrayAdapter(this, android.R.layout.simple_spinner_item, items).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        return ArrayAdapter(this, R.layout.spinner_item, items).also {
+            it.setDropDownViewResource(R.layout.spinner_dropdown_item)
         }
     }
 

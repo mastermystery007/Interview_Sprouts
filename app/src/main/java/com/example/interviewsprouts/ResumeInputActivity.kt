@@ -111,20 +111,20 @@ class ResumeInputActivity : AppCompatActivity() {
 
         val professionAdapter = ArrayAdapter(
             this,
-            android.R.layout.simple_spinner_item,
+            R.layout.spinner_item,
             professionList
         )
 
-        professionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        professionAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerTargetRole.adapter = professionAdapter
 
         val experienceAdapter = ArrayAdapter(
             this,
-            android.R.layout.simple_spinner_item,
+            R.layout.spinner_item,
             experienceLevelList
         )
 
-        experienceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        experienceAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
         spinnerExperienceLevel.adapter = experienceAdapter
 
         btnUploadPdf.setOnClickListener {

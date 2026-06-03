@@ -24,8 +24,8 @@ class StarBuilderActivity : AppCompatActivity() {
         val buildButton = findViewById<Button>(R.id.btnBuildStarAnswer)
         val outputText = findViewById<TextView>(R.id.textStarOutput)
 
-        answerTypeSpinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, answerTypes).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        answerTypeSpinner.adapter = ArrayAdapter(this, R.layout.spinner_item, answerTypes).also {
+            it.setDropDownViewResource(R.layout.spinner_dropdown_item)
         }
 
         buildButton.setOnClickListener {

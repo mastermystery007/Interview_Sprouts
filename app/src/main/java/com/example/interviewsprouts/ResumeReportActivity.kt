@@ -1,6 +1,5 @@
 package com.example.interviewsprouts
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -32,10 +31,10 @@ class ResumeReportActivity : AppCompatActivity() {
         val textMissingKeywordsHook = findViewById<TextView>(R.id.textMissingKeywordsHook)
         val textFullReport = findViewById<TextView>(R.id.textFullReport)
         val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
+        val textUnlockedBulletSuggestions = findViewById<TextView>(R.id.textUnlockedBulletSuggestions)
+        val textUnlockedInterviewQuestions = findViewById<TextView>(R.id.textUnlockedInterviewQuestions)
 
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
-        val btnRewriteBullets = findViewById<Button>(R.id.btnRewriteBullets)
-        val btnInterviewQuestions = findViewById<Button>(R.id.btnInterviewQuestions)
         val btnSaveReport = findViewById<Button>(R.id.btnSaveReport)
 
         val report = createResumeReport(
@@ -54,27 +53,23 @@ class ResumeReportActivity : AppCompatActivity() {
         btnUnlockFullReport.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Simulated Ad")
-                .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock the full report.")
+                .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
+                    textUnlockedBulletSuggestions.text = generateBulletRewriteSuggestions(resumeText, targetRole)
+                    textUnlockedInterviewQuestions.text = generateInterviewQuestionsFromResume(
+                        resumeText = resumeText,
+                        targetRole = targetRole,
+                        experienceLevel = experienceLevel,
+                        jobSpecification = jobSpecification
+                    )
                     textFullReport.visibility = View.VISIBLE
                     btnUnlockFullReport.visibility = View.GONE
                     textLockedReportMessage.visibility = View.GONE
+                    textUnlockedBulletSuggestions.visibility = View.VISIBLE
+                    textUnlockedInterviewQuestions.visibility = View.VISIBLE
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
-        }
-
-        btnRewriteBullets.setOnClickListener {
-            val intent = Intent(this, BulletRewriterActivity::class.java)
-            intent.putExtra("resume_text", resumeText)
-            intent.putExtra("target_role", targetRole)
-            startActivity(intent)
-        }
-
-        btnInterviewQuestions.setOnClickListener {
-            val intent = Intent(this, InterviewPracticeActivity::class.java)
-            intent.putExtra("target_role", targetRole)
-            startActivity(intent)
         }
 
         btnSaveReport.setOnClickListener {
@@ -108,21 +103,223 @@ class ResumeReportActivity : AppCompatActivity() {
         prefs.edit().putString(SavedReportsActivity.KEY_REPORTS, reports.toString()).apply()
     }
 
-    private fun extractResumeBullets(resumeText: String): List<String> {
-        return resumeText
-            .lineSequence()
-            .map { line -> line.trim() }
-            .filter { line ->
-                line.startsWith("•") ||
-                    line.startsWith("-") ||
-                    line.startsWith("*") ||
-                    line.matches(Regex("^\\d+[.)]\\s+.+"))
+
+    private fun generateBulletRewriteSuggestions(
+        resumeText: String,
+        targetRole: String
+    ): String {
+        val candidates = extractCandidateBullets(resumeText)
+        if (candidates.isEmpty()) {
+            return """
+                Bullet Rewrite Suggestions
+
+                No clear resume bullets were detected. Add bullets with action verbs, tools, and measurable outcomes.
+
+                Truth Warning:
+                Only use metrics and responsibilities that are true.
+            """.trimIndent()
+        }
+
+        val weakPhraseRegex = Regex(
+            """\b(worked on|helped with|responsible for|handled|supported|assisted with|involved in|contributed to)\b""",
+            RegexOption.IGNORE_CASE
+        )
+        val weakBullets = candidates.filter { weakPhraseRegex.containsMatchIn(it) }
+        val selectedBullets = (weakBullets + candidates.filterNot { it in weakBullets })
+            .distinct()
+            .take(3)
+        val profile = rewriteProfileForRole(targetRole)
+
+        return buildString {
+            appendLine("Bullet Rewrite Suggestions")
+            appendLine()
+            selectedBullets.forEachIndexed { index, bullet ->
+                val cleanedTask = cleanBulletTask(bullet)
+                appendLine("Suggestion ${index + 1}")
+                appendLine("Original Bullet:")
+                appendLine("• ${bullet.removePrefix("-").removePrefix("•").removePrefix("*").trim()}")
+                appendLine()
+                appendLine("Improved Bullet:")
+                appendLine("• ${profile.improvedVerb} $cleanedTask to improve ${profile.outcome}.")
+                appendLine()
+                appendLine("Metric Version:")
+                appendLine("• ${profile.metricVerb} $cleanedTask, contributing to measurable gains such as ${profile.metricPlaceholders}.")
+                appendLine()
             }
-            .map { line -> line.removePrefix("•").removePrefix("-").removePrefix("*").trim() }
-            .filter { line -> line.length >= 10 }
-            .take(20)
-            .toList()
+            appendLine("Truth Warning:")
+            appendLine("Only use metrics and responsibilities that are true.")
+        }.trim()
     }
+
+    private fun cleanBulletTask(input: String): String {
+        var cleaned = input
+            .trim()
+            .removePrefix("-")
+            .removePrefix("•")
+            .removePrefix("*")
+            .trim()
+
+        val weakPhrases = listOf(
+            "worked on",
+            "worked with",
+            "helped with",
+            "responsible for",
+            "handled",
+            "supported",
+            "assisted with",
+            "involved in",
+            "participated in",
+            "contributed to"
+        )
+
+        for (phrase in weakPhrases) {
+            cleaned = cleaned.replace(
+                Regex("""^${Regex.escape(phrase)}\b[:\-\s]*""", RegexOption.IGNORE_CASE),
+                ""
+            ).trim()
+        }
+
+        if (cleaned.isBlank()) return "resume responsibilities"
+
+        cleaned = cleaned.replaceFirstChar { char ->
+            if (char.isUpperCase() && cleaned.getOrNull(1)?.isUpperCase() != true) {
+                char.lowercase()
+            } else {
+                char.toString()
+            }
+        }
+
+        return cleaned.ifBlank { "resume responsibilities" }
+    }
+
+    private fun extractCandidateBullets(resumeText: String): List<String> {
+        val actionWords = listOf(
+            "worked", "built", "developed", "analyzed", "managed", "created", "implemented",
+            "improved", "designed", "coordinated", "led", "generated", "optimized",
+            "handled", "supported", "assisted", "documented", "launched"
+        )
+        val seen = linkedSetOf<String>()
+
+        resumeText.lineSequence()
+            .map { line -> line.trim() }
+            .filter { line -> line.isNotEmpty() }
+            .forEach { line ->
+                val startsLikeBullet = line.startsWith("-") || line.startsWith("•") || line.startsWith("*")
+                val words = line.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                val hasActionWord = actionWords.any { actionWord ->
+                    line.contains(Regex("""\b${Regex.escape(actionWord)}\b""", RegexOption.IGNORE_CASE))
+                }
+
+                if (startsLikeBullet || (words.size in 5..35 && hasActionWord)) {
+                    seen.add(line)
+                }
+            }
+
+        return seen.take(20)
+    }
+
+    private fun rewriteProfileForRole(targetRole: String): RewriteProfile {
+        val roleLower = targetRole.lowercase()
+        return when {
+            roleLower.contains("software engineer") -> RewriteProfile("Developed", "Optimized", "reliability, scalability, and user experience", "[X% improvement], [number] users/features, or [hours] saved")
+            roleLower.contains("data analyst") -> RewriteProfile("Analyzed", "Automated", "reporting accuracy, KPI visibility, and business insights", "[X% faster reporting], [number] dashboards, or [hours] saved")
+            roleLower.contains("business analyst") -> RewriteProfile("Documented", "Streamlined", "stakeholder alignment, requirement clarity, and process efficiency", "[X% fewer clarification cycles], [number] stakeholders, or [hours] saved")
+            roleLower.contains("marketing") || roleLower.contains("digital marketing") -> RewriteProfile("Managed", "Optimized", "campaign performance, engagement, and lead generation", "[X% higher CTR], [number] leads, or [X% lower CPC]")
+            roleLower.contains("product manager") -> RewriteProfile("Prioritized", "Improved", "product clarity, roadmap alignment, and user value", "[number] users, [X% adoption], or [number] features shipped")
+            roleLower.contains("finance analyst") -> RewriteProfile("Analyzed", "Improved", "forecasting accuracy, budgeting clarity, and financial decision-making", "[X% variance reduction], [amount] cost visibility, or [hours] saved")
+            roleLower.contains("sales executive") -> RewriteProfile("Managed", "Increased", "pipeline quality, client engagement, and revenue opportunities", "[number] leads, [X% conversion], or [amount] pipeline value")
+            roleLower.contains("operations analyst") -> RewriteProfile("Improved", "Reduced", "workflow efficiency, process consistency, and operational productivity", "[X% cost reduction], [hours] saved, or [number] processes improved")
+            roleLower.contains("hr executive") -> RewriteProfile("Supported", "Improved", "candidate experience, onboarding quality, and HR operations", "[X% faster hiring], [number] candidates, or [hours] saved")
+            roleLower.contains("ux") || roleLower.contains("ui") -> RewriteProfile("Designed", "Improved", "usability, user flows, and product experience", "[X% task completion], [number] screens, or [number] users tested")
+            roleLower.contains("project manager") -> RewriteProfile("Coordinated", "Improved", "delivery predictability, stakeholder alignment, and risk visibility", "[number] milestones, [X% on-time delivery], or [hours] saved")
+            else -> RewriteProfile("Improved", "Strengthened", "clarity, execution, and measurable team outcomes", "[X% improvement], [number] outcomes, or [hours] saved")
+        }
+    }
+
+    private fun generateInterviewQuestionsFromResume(
+        resumeText: String,
+        targetRole: String,
+        experienceLevel: String,
+        jobSpecification: String
+    ): String {
+        // TODO: Replace offline generation with backend LLM call. Do not call LLM API directly from Android.
+        val resumeLower = resumeText.lowercase()
+        val resumeQuestions = mutableListOf<String>()
+
+        if (resumeLower.contains("project")) {
+            resumeQuestions.add("Walk me through the strongest project on your resume and explain your exact contribution.")
+        }
+        if (resumeText.contains("SQL", ignoreCase = true)) {
+            resumeQuestions.add("How have you used SQL in your resume experience, and how did you validate the results?")
+        }
+        if (resumeText.contains("Python", ignoreCase = true)) {
+            resumeQuestions.add("Describe a Python project from your resume and the problem it solved.")
+        }
+        if (resumeLower.contains("dashboard") || resumeLower.contains("reporting")) {
+            resumeQuestions.add("Tell me about a dashboard or reporting workflow you built and what insights it provided.")
+        }
+        if (resumeLower.contains("api") || resumeLower.contains("backend") || resumeLower.contains("system")) {
+            resumeQuestions.add("Explain a technical design decision you made for an API, backend, or system mentioned on your resume.")
+        }
+        if (resumeLower.contains("campaign") || resumeLower.contains("ctr") || resumeLower.contains("leads")) {
+            resumeQuestions.add("How did you measure campaign performance, CTR, leads, or conversion impact in your work?")
+        }
+        if (resumeLower.contains("stakeholder") || resumeLower.contains("uat") || resumeLower.contains("requirements")) {
+            resumeQuestions.add("How did you gather requirements, manage stakeholders, or support UAT in a resume experience?")
+        }
+
+        while (resumeQuestions.size < 3) {
+            resumeQuestions.add(
+                when (resumeQuestions.size) {
+                    0 -> "Which resume achievement best proves you are ready for a $targetRole role?"
+                    1 -> "What was the most challenging responsibility on your resume, and how did you handle it?"
+                    else -> "Which resume bullet would you strengthen with a true metric, and what evidence would support it?"
+                }
+            )
+        }
+
+        val roleQuestions = listOf(
+            "Why are you targeting $targetRole roles at the $experienceLevel level?",
+            "Which skills from your resume most closely match the expectations for $targetRole?",
+            "What would you prioritize in your first 30 days in a $targetRole position?"
+        )
+        val behavioralQuestions = listOf(
+            "Tell me about a time you solved a difficult problem using experience shown on your resume.",
+            "Describe a time you received feedback and improved your work.",
+            "Tell me about a time you worked with a teammate, stakeholder, or manager to complete an important task."
+        )
+
+        val jobDescriptionSection = if (jobSpecification.isNotBlank()) {
+            """
+
+                Job Description Match Questions:
+                1. Which requirement in the job specification best matches your resume, and what proof can you share?
+                2. Which job specification keyword is missing or weak in your resume, and how are you improving it honestly?
+                3. What would you clarify about this job specification before accepting or starting the role?
+            """.trimIndent()
+        } else {
+            ""
+        }
+
+        return """
+            Resume-Based Interview Questions:
+            ${resumeQuestions.take(3).mapIndexed { index, question -> "${index + 1}. $question" }.joinToString("\n")}
+
+            Role-Specific Interview Questions:
+            ${roleQuestions.mapIndexed { index, question -> "${index + 1}. $question" }.joinToString("\n")}
+
+            Behavioral Questions:
+            ${behavioralQuestions.mapIndexed { index, question -> "${index + 1}. $question" }.joinToString("\n")}
+            $jobDescriptionSection
+        """.trimIndent()
+    }
+
+    private data class RewriteProfile(
+        val improvedVerb: String,
+        val metricVerb: String,
+        val outcome: String,
+        val metricPlaceholders: String
+    )
 
     private fun createResumeReport(
         resumeText: String,
