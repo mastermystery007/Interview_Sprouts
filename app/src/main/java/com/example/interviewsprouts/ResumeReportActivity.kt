@@ -7,12 +7,18 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.example.interviewsprouts.network.AiClient
+import com.example.interviewsprouts.network.ResumeAiRequest
+import com.example.interviewsprouts.network.ResumeAiResponse
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class ResumeReportActivity : AppCompatActivity() {
 
@@ -83,15 +89,17 @@ class ResumeReportActivity : AppCompatActivity() {
                 .setTitle("Simulated Ad")
                 .setMessage("In the real app, another rewarded ad will unlock the Advanced AI Review. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
-                    textAdvancedLlmReview.text = generateAdvancedLlmReview(
-                        resumeText = resumeText,
-                        targetRole = targetRole,
-                        experienceLevel = experienceLevel,
-                        jobSpecification = jobSpecification
-                    )
+                    textAdvancedLlmReview.text = "Generating Advanced AI Review..."
                     textAdvancedLlmReview.visibility = View.VISIBLE
                     textAdvancedLockedMessage.visibility = View.GONE
                     btnUnlockAdvancedLlmReview.visibility = View.GONE
+                    requestAdvancedAiReview(
+                        resumeText = resumeText,
+                        targetRole = targetRole,
+                        experienceLevel = experienceLevel,
+                        jobSpecification = jobSpecification,
+                        textAdvancedLlmReview = textAdvancedLlmReview
+                    )
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -107,16 +115,94 @@ class ResumeReportActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestAdvancedAiReview(
+        resumeText: String,
+        targetRole: String,
+        experienceLevel: String,
+        jobSpecification: String,
+        textAdvancedLlmReview: TextView
+    ) {
+        if (AiClient.isPlaceholderBackendUrl()) {
+            textAdvancedLlmReview.text = buildOfflineAdvancedFallback(
+                resumeText = resumeText,
+                targetRole = targetRole,
+                experienceLevel = experienceLevel,
+                jobSpecification = jobSpecification
+            )
+            return
+        }
+
+        val request = ResumeAiRequest(
+            resumeText = resumeText,
+            targetRole = targetRole,
+            experienceLevel = experienceLevel,
+            jobSpecification = jobSpecification,
+            requestedFeatures = listOf(
+                "advancedReview",
+                "tailoredResumeSuggestions",
+                "interviewQuestions",
+                "bulletRewriteSuggestions"
+            )
+        )
+
+        AiClient.service.analyzeResume(request).enqueue(object : Callback<ResumeAiResponse> {
+            override fun onResponse(call: Call<ResumeAiResponse>, response: Response<ResumeAiResponse>) {
+                val body = response.body()
+                if (response.isSuccessful && body != null && body.error.isNullOrBlank()) {
+                    textAdvancedLlmReview.text = formatBackendAdvancedReview(body)
+                } else {
+                    textAdvancedLlmReview.text = buildOfflineAdvancedFallback(
+                        resumeText = resumeText,
+                        targetRole = targetRole,
+                        experienceLevel = experienceLevel,
+                        jobSpecification = jobSpecification
+                    )
+                }
+            }
+
+            override fun onFailure(call: Call<ResumeAiResponse>, t: Throwable) {
+                textAdvancedLlmReview.text = buildOfflineAdvancedFallback(
+                    resumeText = resumeText,
+                    targetRole = targetRole,
+                    experienceLevel = experienceLevel,
+                    jobSpecification = jobSpecification
+                )
+            }
+        })
+    }
+
+    private fun formatBackendAdvancedReview(response: ResumeAiResponse): String {
+        val sections = mutableListOf<String>()
+        response.advancedReview.takeIf { it.isNotBlank() }?.let { sections.add("Advanced AI Review:\n$it") }
+        response.tailoredResumeSuggestions.takeIf { it.isNotBlank() }?.let { sections.add("Tailored Resume Suggestions:\n$it") }
+        response.interviewQuestions.takeIf { it.isNotBlank() }?.let { sections.add("Resume-Specific Interview Questions:\n$it") }
+        response.bulletRewriteSuggestions.takeIf { it.isNotBlank() }?.let { sections.add("Bullet Rewrite Suggestions:\n$it") }
+
+        return sections.joinToString("\n\n").ifBlank {
+            "AI backend returned no usable content. Showing offline fallback is recommended."
+        }
+    }
+
+    private fun buildOfflineAdvancedFallback(
+        resumeText: String,
+        targetRole: String,
+        experienceLevel: String,
+        jobSpecification: String
+    ): String {
+        return "AI backend unavailable. Showing offline fallback.\n\n" + generateAdvancedLlmReview(
+            resumeText = resumeText,
+            targetRole = targetRole,
+            experienceLevel = experienceLevel,
+            jobSpecification = jobSpecification
+        )
+    }
+
     private fun generateAdvancedLlmReview(
         resumeText: String,
         targetRole: String,
         experienceLevel: String,
         jobSpecification: String
     ): String {
-        // TODO: Replace this offline placeholder with backend call to DeepSeek V4 Flash. Do not call DeepSeek directly from Android.
-        // DeepSeek API key must never be stored in Android.
-        // Resume text should not be logged.
-        // Backend should handle privacy, rate limits, and prompt construction for Android → backend → DeepSeek V4 Flash.
         val tailoredSuggestions = generateTailoredJobDescriptionSuggestions(
             resumeText = resumeText,
             jobSpecification = jobSpecification,
@@ -124,7 +210,7 @@ class ResumeReportActivity : AppCompatActivity() {
         )
         val metricSignalCount = countMetricSignals(resumeText)
         val sectionSignals = detectSectionSignals(resumeText)
-        val bulletExamples = extractCandidateBullets(resumeText).take(2)
+        val bulletExamples = extractCandidateBullets(resumeText).take(3)
         val bulletFocus = if (bulletExamples.isEmpty()) {
             "• Add 2–4 role-relevant bullets that start with strong action verbs, mention real tools or responsibilities, and include true placeholders for metrics such as [X%], [number], or [hours]."
         } else {
@@ -133,15 +219,15 @@ class ResumeReportActivity : AppCompatActivity() {
                 "• Rewrite: $cleanedTask — clarify the action, tool/context, audience, and true measurable result for $targetRole."
             }
         }
-        val jdQuestion = if (jobSpecification.isBlank()) {
-            "How would you adapt your resume if a job description emphasized tools, responsibilities, or outcomes not currently shown?"
-        } else {
-            "Which job-description requirement is strongest in your resume, and which one needs honest evidence before you add it?"
-        }
+        val advancedQuestions = generateResumeSpecificAdvancedQuestions(
+            resumeText = resumeText,
+            targetRole = targetRole,
+            jobSpecification = jobSpecification
+        )
 
         return """
 Advanced AI Review:
-• Offline placeholder assessment for a future backend-powered DeepSeek V4 Flash response.
+• Offline fallback assessment for a backend-powered DeepSeek V4 Flash response.
 • Target role: $targetRole.
 • Experience level: $experienceLevel.
 • Resume structure signals found: ${sectionSignals.joinToString(", ").ifBlank { "limited section signals" }}.
@@ -155,12 +241,7 @@ $bulletFocus
 • Use this pattern: Action Verb + Task + Tool/Context + Audience + True Result.
 • Keep placeholders like [X%], [number], and [hours] until you can replace them with real evidence.
 
-Advanced Interview Questions:
-1. Walk me through the resume achievement that best proves readiness for $targetRole, including the problem, your action, and the measurable outcome.
-2. What tradeoff or constraint did you face in a project or responsibility listed on your resume, and how did you decide what to prioritize?
-3. $jdQuestion
-4. Which bullet would you rewrite first for a $targetRole interview, and what evidence would you use to defend every claim?
-5. How would you explain a missing keyword honestly if an interviewer asks why it is not already reflected in your resume?
+$advancedQuestions
 
 Truth Warning:
 Only add skills, metrics, and responsibilities that are true.
@@ -256,16 +337,17 @@ $whereToAddText
             appendLine("Bullet Rewrite Suggestions")
             appendLine()
             selectedBullets.forEachIndexed { index, bullet ->
-                val cleanedTask = cleanBulletTask(bullet)
+                val cleanedTask = removeDuplicatedLeadingVerb(cleanBulletTask(bullet), profile.improvedVerb)
+                val metricTask = removeDuplicatedLeadingVerb(cleanedTask, profile.metricVerb)
                 appendLine("Suggestion ${index + 1}")
                 appendLine("Original Bullet:")
-                appendLine("• ${bullet.removePrefix("-").removePrefix("•").removePrefix("*").trim()}")
+                appendLine("• ${cleanBulletTask(bullet)}")
                 appendLine()
                 appendLine("Improved Bullet:")
                 appendLine("• ${profile.improvedVerb} $cleanedTask to improve ${profile.outcome}.")
                 appendLine()
                 appendLine("Metric Version:")
-                appendLine("• ${profile.metricVerb} $cleanedTask, contributing to measurable gains such as ${profile.metricPlaceholders}.")
+                appendLine("• ${profile.metricVerb} $metricTask, contributing to measurable gains such as ${profile.metricPlaceholders}.")
                 appendLine()
             }
             appendLine("Truth Warning:")
@@ -276,9 +358,8 @@ $whereToAddText
     private fun cleanBulletTask(input: String): String {
         var cleaned = input
             .trim()
-            .removePrefix("-")
-            .removePrefix("•")
-            .removePrefix("*")
+            .replace(Regex("""^(?:[•\-*]+|\d{1,2}[.)])\s*"""), "")
+            .replace(Regex("""^[•\-*]+\s*"""), "")
             .trim()
 
         val weakPhrases = listOf(
@@ -291,20 +372,7 @@ $whereToAddText
             "assisted with",
             "involved in",
             "participated in",
-            "contributed to",
-            "developed",
-            "optimized",
-            "analyzed",
-            "automated",
-            "documented",
-            "streamlined",
-            "managed",
-            "prioritized",
-            "improved",
-            "increased",
-            "reduced",
-            "designed",
-            "coordinated"
+            "contributed to"
         )
 
         for (phrase in weakPhrases) {
@@ -313,6 +381,12 @@ $whereToAddText
                 ""
             ).trim()
         }
+
+        cleaned = cleaned
+            .replace(Regex("""^[•\-*]+\s*"""), "")
+            .replace("•", "")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
 
         if (cleaned.isBlank()) return "resume responsibilities"
 
@@ -327,6 +401,13 @@ $whereToAddText
         return cleaned.ifBlank { "resume responsibilities" }
     }
 
+    private fun removeDuplicatedLeadingVerb(task: String, verb: String): String {
+        return task.replace(
+            Regex("""^${Regex.escape(verb)}\b[:\-\s]*""", RegexOption.IGNORE_CASE),
+            ""
+        ).trim().ifBlank { "resume responsibilities" }
+    }
+
     private fun extractCandidateBullets(resumeText: String): List<String> {
         val actionWords = listOf(
             "worked", "built", "developed", "analyzed", "managed", "created", "implemented",
@@ -339,7 +420,7 @@ $whereToAddText
             .map { line -> line.trim() }
             .filter { line -> line.isNotEmpty() }
             .forEach { line ->
-                val startsLikeBullet = line.startsWith("-") || line.startsWith("•") || line.startsWith("*")
+                val startsLikeBullet = line.matches(Regex("""^\s*(?:[•\-*]+|\d{1,2}[.)])\s+.+"""))
                 val words = line.split("\\s+".toRegex()).filter { it.isNotBlank() }
                 val hasActionWord = actionWords.any { actionWord ->
                     line.contains(Regex("""\b${Regex.escape(actionWord)}\b""", RegexOption.IGNORE_CASE))
@@ -377,76 +458,140 @@ $whereToAddText
         experienceLevel: String,
         jobSpecification: String
     ): String {
-        // TODO: Replace offline generation with backend LLM call. Do not call LLM API directly from Android.
+        val candidateLines = extractCandidateBullets(resumeText)
+        val signalQuestions = buildResumeSignalQuestions(resumeText, candidateLines, targetRole, experienceLevel)
+            .take(8)
+            .toMutableList()
+
+        candidateLines.forEach { line ->
+            if (signalQuestions.size < 5) {
+                val excerpt = shortExcerpt(cleanBulletTask(line))
+                signalQuestions.add("Based on your resume line \"$excerpt\", explain the context, your exact contribution, tools used, and the result you can prove.")
+            }
+        }
+
+        if (signalQuestions.isEmpty()) {
+            signalQuestions.add("Based on the clearest resume responsibility you listed, explain the task, decisions you owned, and evidence that shows readiness for $targetRole.")
+        }
+
+        val jobDescriptionSection = buildJobDescriptionMatchQuestions(jobSpecification, resumeText)
+
+        return buildString {
+            appendLine("Resume-Based Interview Questions:")
+            signalQuestions.take(8).forEachIndexed { index, question ->
+                appendLine("${index + 1}. $question")
+            }
+            if (jobDescriptionSection.isNotBlank()) {
+                appendLine()
+                append(jobDescriptionSection)
+            }
+        }.trim()
+    }
+
+    private fun buildResumeSignalQuestions(
+        resumeText: String,
+        candidateLines: List<String>,
+        targetRole: String,
+        experienceLevel: String
+    ): List<String> {
+        val lower = resumeText.lowercase()
+        val levelContext = if (experienceLevel.isBlank() || experienceLevel == "advanced") "" else " for the $experienceLevel level"
+        val questions = linkedSetOf<String>()
+        fun excerptFor(vararg keywords: String): String {
+            val line = candidateLines.firstOrNull { candidate ->
+                keywords.any { keyword -> candidate.contains(keyword, ignoreCase = true) }
+            }
+            return line?.let { shortExcerpt(cleanBulletTask(it)) }.orEmpty()
+        }
+        fun addSignal(signal: String, keywords: List<String>, question: (String) -> String) {
+            if (keywords.any { lower.contains(it.lowercase()) }) {
+                questions.add(question(excerptFor(*keywords.toTypedArray()).ifBlank { signal }))
+            }
+        }
+
+        addSignal("project", listOf("project")) { ref -> "Based on your resume reference to \"$ref\", walk through the project goal, your exact ownership, and the outcome$levelContext." }
+        addSignal("SQL", listOf("SQL")) { ref -> "You mention SQL in \"$ref\". Walk through a query or analysis you wrote, how you checked accuracy, and what decision it supported." }
+        addSignal("Python", listOf("Python")) { ref -> "You mention Python in \"$ref\". Explain the problem, libraries or scripts used, and how you verified the output." }
+        addSignal("Excel", listOf("Excel")) { ref -> "You mention Excel in \"$ref\". Describe the workbook, formulas, analysis, or reporting process and what it improved." }
+        addSignal("Power BI", listOf("Power BI")) { ref -> "You mention Power BI in \"$ref\". Explain the dashboard model, audience, refresh process, and business question it answered." }
+        addSignal("Tableau", listOf("Tableau")) { ref -> "You mention Tableau in \"$ref\". Walk through the visualization choices, data source, and insight delivered." }
+        addSignal("dashboard/reporting", listOf("dashboard", "reporting", "report")) { ref -> "Based on \"$ref\", explain the reporting workflow, users, metrics tracked, and how the output changed decisions." }
+        addSignal("API/backend/system/Java/Kotlin", listOf("API", "backend", "system", "Java", "Kotlin")) { ref -> "Based on \"$ref\", explain the technical design, tradeoffs, testing approach, and reliability considerations." }
+        addSignal("campaign metrics", listOf("campaign", "CTR", "CPC", "leads", "conversion")) { ref -> "You reference campaign or funnel work in \"$ref\". Explain the channel, metric definitions, optimization steps, and measurable result." }
+        addSignal("stakeholder/UAT/requirements/Jira/Agile", listOf("stakeholder", "UAT", "requirements", "Jira", "Agile")) { ref -> "Based on \"$ref\", describe how you gathered requirements, handled stakeholder feedback, tracked work, and confirmed acceptance." }
+        addSignal("leadership", listOf("managed", "led", "coordinated")) { ref -> "Based on \"$ref\", explain who or what you coordinated, how you kept execution on track, and what changed because of your involvement." }
+        if (extractMetricExamples(resumeText).isNotEmpty()) {
+            val ref = shortExcerpt(extractMetricExamples(resumeText).first())
+            questions.add("Based on the measurable line \"$ref\", explain how the number was calculated, your contribution, and why the metric mattered for $targetRole.")
+        }
+
+        return questions.toList()
+    }
+
+    private fun buildJobDescriptionMatchQuestions(jobSpecification: String, resumeText: String): String {
+        if (jobSpecification.isBlank()) return ""
+        val jdKeywords = extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase()).take(3)
+        if (jdKeywords.isEmpty()) return ""
         val resumeLower = resumeText.lowercase()
-        val resumeQuestions = mutableListOf<String>()
+        return buildString {
+            appendLine("Job Description Match Questions:")
+            jdKeywords.forEachIndexed { index, keyword ->
+                val evidence = if (resumeLower.contains(keyword.lowercase())) "show evidence of this" else "need honest evidence before adding it"
+                appendLine("${index + 1}. The JD emphasizes $keyword. Where in your resume do you $evidence, and what proof would you discuss?")
+            }
+        }.trim()
+    }
 
-        if (resumeLower.contains("project")) {
-            resumeQuestions.add("Walk me through the strongest project on your resume and explain your exact contribution.")
-        }
-        if (resumeText.contains("SQL", ignoreCase = true)) {
-            resumeQuestions.add("How have you used SQL in your resume experience, and how did you validate the results?")
-        }
-        if (resumeText.contains("Python", ignoreCase = true)) {
-            resumeQuestions.add("Describe a Python project from your resume and the problem it solved.")
-        }
-        if (resumeLower.contains("dashboard") || resumeLower.contains("reporting")) {
-            resumeQuestions.add("Tell me about a dashboard or reporting workflow you built and what insights it provided.")
-        }
-        if (resumeLower.contains("api") || resumeLower.contains("backend") || resumeLower.contains("system")) {
-            resumeQuestions.add("Explain a technical design decision you made for an API, backend, or system mentioned on your resume.")
-        }
-        if (resumeLower.contains("campaign") || resumeLower.contains("ctr") || resumeLower.contains("leads")) {
-            resumeQuestions.add("How did you measure campaign performance, CTR, leads, or conversion impact in your work?")
-        }
-        if (resumeLower.contains("stakeholder") || resumeLower.contains("uat") || resumeLower.contains("requirements")) {
-            resumeQuestions.add("How did you gather requirements, manage stakeholders, or support UAT in a resume experience?")
+    private fun shortExcerpt(text: String, maxLength: Int = 120): String {
+        val compact = text.replace(Regex("""\s+"""), " ").trim().trim('.', ';', ',')
+        return if (compact.length <= maxLength) compact else compact.take(maxLength - 1).trimEnd() + "…"
+    }
+
+    private fun generateResumeSpecificAdvancedQuestions(
+        resumeText: String,
+        targetRole: String,
+        jobSpecification: String
+    ): String {
+        val candidateLines = extractCandidateBullets(resumeText)
+        val baseQuestions = buildResumeSignalQuestions(resumeText, candidateLines, targetRole, "advanced")
+            .toMutableList()
+
+        candidateLines.forEach { line ->
+            if (baseQuestions.size < 10) {
+                val excerpt = shortExcerpt(cleanBulletTask(line))
+                baseQuestions.add("Based on your resume line \"$excerpt\", explain the business or technical problem, your decisions, and the evidence behind the result.")
+            }
         }
 
-        while (resumeQuestions.size < 3) {
-            resumeQuestions.add(
-                when (resumeQuestions.size) {
-                    0 -> "Which resume achievement best proves you are ready for a $targetRole role?"
-                    1 -> "What was the most challenging responsibility on your resume, and how did you handle it?"
-                    else -> "Which resume bullet would you strengthen with a true metric, and what evidence would support it?"
+        if (baseQuestions.size < 8) {
+            extractMetricExamples(resumeText).forEach { metricLine ->
+                if (baseQuestions.size < 10) {
+                    val excerpt = shortExcerpt(metricLine)
+                    baseQuestions.add("Based on the measurable resume excerpt \"$excerpt\", explain how you calculated that result and what you personally influenced.")
                 }
-            )
+            }
         }
 
-        val roleQuestions = listOf(
-            "Why are you targeting $targetRole roles at the $experienceLevel level?",
-            "Which skills from your resume most closely match the expectations for $targetRole?",
-            "What would you prioritize in your first 30 days in a $targetRole position?"
-        )
-        val behavioralQuestions = listOf(
-            "Tell me about a time you solved a difficult problem using experience shown on your resume.",
-            "Describe a time you received feedback and improved your work.",
-            "Tell me about a time you worked with a teammate, stakeholder, or manager to complete an important task."
-        )
-
-        val jobDescriptionSection = if (jobSpecification.isNotBlank()) {
-            """
-
-                Job Description Match Questions:
-                1. Which requirement in the job specification best matches your resume, and what proof can you share?
-                2. Which job specification keyword is missing or weak in your resume, and how are you improving it honestly?
-                3. What would you clarify about this job specification before accepting or starting the role?
-            """.trimIndent()
-        } else {
-            ""
+        if (baseQuestions.isEmpty()) {
+            baseQuestions.add("Choose one actual line from your resume and explain the work behind it, including task scope, tools, constraints, and verifiable outcome for $targetRole.")
         }
 
-        return """
-            Resume-Based Interview Questions:
-            ${resumeQuestions.take(3).mapIndexed { index, question -> "${index + 1}. $question" }.joinToString("\n")}
+        val jdKeywords = extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase()).take(2)
+        jdKeywords.forEach { keyword ->
+            if (baseQuestions.size < 10) {
+                baseQuestions.add("The job description emphasizes $keyword. Point to the closest actual resume evidence and explain the gap honestly if the evidence is incomplete.")
+            }
+        }
 
-            Role-Specific Interview Questions:
-            ${roleQuestions.mapIndexed { index, question -> "${index + 1}. $question" }.joinToString("\n")}
-
-            Behavioral Questions:
-            ${behavioralQuestions.mapIndexed { index, question -> "${index + 1}. $question" }.joinToString("\n")}
-            $jobDescriptionSection
-        """.trimIndent()
+        return buildString {
+            appendLine("Advanced Resume-Specific Interview Questions:")
+            baseQuestions.take(10).forEachIndexed { index, question ->
+                appendLine("${index + 1}. $question")
+                appendLine("   Why this may be asked: Interviewers need to verify that the resume claim is real, role-relevant, and owned by you.")
+                appendLine("   Strong answer should mention: context, your specific action, tools or stakeholders, constraints, and a truthful result or metric.")
+                appendLine("   Follow-up probe: What evidence, artifact, calculation, or decision would you show to support this answer?")
+            }
+        }.trim()
     }
 
     private data class RewriteProfile(
@@ -528,9 +673,9 @@ Watch an ad to unlock the full report with detailed scoring, bullet rewrites, an
             """.trimIndent()
         }
 
-        val measurableExplanation = explainMeasurableImpactScore(measurableImpactScore)
-        val actionVerbExplanation = explainActionVerbScore(actionVerbScore)
-        val clarityExplanation = explainSectionClarityScore(sectionClarityScore)
+        val measurableExplanation = explainMeasurableImpactScore(measurableImpactScore, resumeText)
+        val actionVerbExplanation = explainActionVerbScore(actionVerbScore, resumeText)
+        val clarityExplanation = explainSectionClarityScore(sectionClarityScore, resumeText)
 
         val basicFeedback = """
 Strong:
@@ -553,15 +698,6 @@ Top fixes:
         val fullReport = """
 Detailed Resume Report
 
-Overall Score: $overallScore/100
-
-Scoring Formula:
-• Keyword Match: 25%
-• Measurable Impact: 25%
-• Strong Action Verbs: 20%
-• Section Clarity: 20%
-• Role Relevance: 10%
-
 Category Scores:
 
 Keyword Match: $keywordMatchScore/100
@@ -583,13 +719,7 @@ Section Clarity: $sectionClarityScore/100
 $clarityExplanation
 
 Role Relevance: $roleRelevanceScore/100
-This combines keyword match, resume structure, and whether you provided a job specification.
-
-Detected Resume Sections:
-${detectSectionSignals(resumeText).joinToString("\n") { "• $it" }}
-
-Missing Important Sections:
-${detectMissingSections(resumeText).joinToString("\n") { "• $it" }.ifBlank { "No major missing section detected." }}
+This is based on resume evidence, keyword match, and job description alignment.
 
 How to Add Keywords Honestly:
 • Add tools like SQL, Excel, Power BI, Python, Figma, CRM under Skills only if you used them.
@@ -609,13 +739,6 @@ Analyzed business performance data using Excel and dashboards to identify proces
 
 Stronger with Metric:
 Analyzed business performance data using Excel dashboards, reducing manual reporting time by [X%] and improving weekly decision visibility for [team/business unit].
-
-Role-Specific Interview Questions:
-1. Why are you interested in this $targetRole role?
-2. Which part of your resume best matches this job specification?
-3. Tell me about a project or experience where you used one of the key required skills.
-4. What measurable result did you create in your past work or project?
-5. Which missing skill from this job description are you currently improving?
 
 Truth Warning:
 Only add keywords, tools, metrics, and responsibilities that reflect your real experience.
@@ -784,28 +907,81 @@ Only add keywords, tools, metrics, and responsibilities that reflect your real e
         return resultWords.count { lower.contains(it) }
     }
 
-    private fun explainMeasurableImpactScore(score: Int): String {
-        return when {
-            score >= 80 -> "Your resume includes strong measurable details such as numbers, percentages, users, revenue, time saved, or performance improvements."
-            score >= 60 -> "Your resume has some measurable details, but more bullets should include concrete results."
-            else -> "Your resume has few measurable details. Add numbers such as %, users, revenue, cost saved, time saved, accuracy, CTR, ROAS, or efficiency."
+    private fun explainMeasurableImpactScore(score: Int, resumeText: String): String {
+        val examples = extractMetricExamples(resumeText)
+        val guidance = when {
+            score >= 80 -> "Your measurable-impact score is strong because the resume includes evidence signals below."
+            score >= 60 -> "Your resume has some measurable evidence, but more bullets should connect work to concrete results."
+            else -> "Your resume needs more measurable evidence such as %, users, revenue, cost saved, time saved, accuracy, CTR, ROAS, ROI, or efficiency."
         }
+        val examplesText = if (examples.isEmpty()) {
+            "No clear measurable examples detected."
+        } else {
+            "Detected measurable examples:\n" + examples.joinToString("\n") { "• $it" }
+        }
+        return "$guidance\n$examplesText"
     }
 
-    private fun explainActionVerbScore(score: Int): String {
-        return when {
-            score >= 80 -> "Your resume uses many strong action verbs."
+    private fun extractMetricExamples(resumeText: String): List<String> {
+        val metricRegex = Regex(
+            """(%|\b\d+[\w.%+-]*\b|users?|customers?|clients?|hours?|days?|weeks?|months?|revenue|cost|budget|sales|leads?|accuracy|performance|latency|CTR|CPC|CPA|ROAS|ROI|improved|reduced|increased|saved|optimized)""",
+            RegexOption.IGNORE_CASE
+        )
+        return resumeText.lineSequence()
+            .map { line -> shortExcerpt(cleanBulletTask(line), 140) }
+            .filter { line -> line.isNotBlank() && metricRegex.containsMatchIn(line) }
+            .distinct()
+            .take(5)
+            .toList()
+    }
+
+    private fun explainActionVerbScore(score: Int, resumeText: String): String {
+        val examples = extractActionVerbExamples(resumeText)
+        val guidance = when {
+            score >= 80 -> "Your resume uses strong action verbs in the examples below."
             score >= 60 -> "Your resume uses some action verbs, but several bullets can start with stronger verbs."
             else -> "Your resume needs stronger action verbs. Avoid weak phrases like 'worked on' and use verbs like analyzed, built, improved, managed, optimized, automated, or launched."
         }
+        val examplesText = if (examples.isEmpty()) {
+            "No strong action-verb examples detected."
+        } else {
+            "Detected action-verb examples:\n" + examples.joinToString("\n") { "• $it" }
+        }
+        return "$guidance\n$examplesText"
     }
 
-    private fun explainSectionClarityScore(score: Int): String {
-        return when {
-            score >= 80 -> "Your resume has clear important sections such as education, experience, skills, and projects."
-            score >= 60 -> "Your resume has some important sections, but one or more core sections may be missing or unclear."
-            else -> "Your resume structure is weak. Add clear sections such as Education, Experience, Skills, and Projects."
+    private fun extractActionVerbExamples(resumeText: String): List<String> {
+        val strongVerbRegex = Regex(
+            """\b(achieved|analyzed|automated|built|coordinated|created|delivered|designed|developed|executed|generated|implemented|improved|increased|launched|led|managed|optimized|reduced|streamlined|resolved|scaled|planned|tested|deployed)\b""",
+            RegexOption.IGNORE_CASE
+        )
+        return resumeText.lineSequence()
+            .map { line -> shortExcerpt(cleanBulletTask(line), 140) }
+            .filter { line -> line.isNotBlank() && strongVerbRegex.containsMatchIn(line) }
+            .distinct()
+            .take(5)
+            .toList()
+    }
+
+    private fun explainSectionClarityScore(score: Int, resumeText: String): String {
+        val detected = detectSectionSignals(resumeText)
+        val missing = detectMissingSections(resumeText)
+        val guidance = when {
+            score >= 80 -> "Your resume has clear section structure based on the sections detected below."
+            score >= 60 -> "Your resume has some important sections, but review the missing list below for possible structure gaps."
+            else -> "Your resume structure is weak. Add clear sections such as Education, Experience, Skills, and Projects where truthful."
         }
+        val detectedText = if (detected.isEmpty()) {
+            "Detected sections:\n• No clear section headings detected."
+        } else {
+            "Detected sections:\n" + detected.joinToString("\n") { "• $it" }
+        }
+        val missingText = if (missing.isEmpty()) {
+            "Missing important sections:\nNo major missing section detected."
+        } else {
+            "Missing important sections:\n" + missing.joinToString("\n") { "• $it" }
+        }
+        return "$guidance\n$detectedText\n\n$missingText"
     }
 
     private fun getRoleKeywordBank(roleLower: String): List<String> {
