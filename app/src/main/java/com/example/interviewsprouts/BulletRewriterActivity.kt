@@ -2,6 +2,7 @@ package com.example.interviewsprouts
 
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -34,6 +35,7 @@ class BulletRewriterActivity : AppCompatActivity() {
         val targetRole = intent.getStringExtra("target_role") ?: ""
         val bulletSourceStatus = findViewById<TextView>(R.id.textBulletSourceStatus)
         val resumeBulletSpinner = findViewById<Spinner>(R.id.spinnerResumeBullets)
+        val selectedFullBulletText = findViewById<TextView>(R.id.textSelectedFullBullet)
         val bulletInput = findViewById<EditText>(R.id.editWeakBullet)
         val professionLabel = findViewById<TextView>(R.id.textProfessionLabel)
         val professionSpinner = findViewById<Spinner>(R.id.spinnerProfession)
@@ -58,16 +60,27 @@ class BulletRewriterActivity : AppCompatActivity() {
 
         val extractedBullets = extractCandidateBullets(resumeText)
         if (extractedBullets.isNotEmpty()) {
-            val bulletAdapter = ArrayAdapter(this, R.layout.spinner_item, extractedBullets)
+            val bulletPreviews = extractedBullets.map { bullet -> shortBulletPreview(bullet) }
+            val bulletAdapter = ArrayAdapter(this, R.layout.spinner_item, bulletPreviews)
             bulletAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
             resumeBulletSpinner.adapter = bulletAdapter
             resumeBulletSpinner.visibility = View.VISIBLE
+            selectedFullBulletText.visibility = View.VISIBLE
+            selectedFullBulletText.text = "Selected full bullet:\n• ${extractedBullets.first()}"
             bulletInput.visibility = View.VISIBLE
             bulletInput.hint = "Optional: paste/edit a bullet manually to override selected bullet"
             bulletSourceStatus.text =
-                "Found resume bullets. Select one below, or paste/edit a bullet manually to override it."
+                "Found resume bullets. Select a shortened preview below; the full selected bullet is shown underneath."
+            resumeBulletSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                    selectedFullBulletText.text = "Selected full bullet:\n• ${extractedBullets[position]}"
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+            }
         } else {
             resumeBulletSpinner.visibility = View.GONE
+            selectedFullBulletText.visibility = View.GONE
             bulletInput.visibility = View.VISIBLE
             bulletSourceStatus.text = "No clear resume bullets detected. Paste a bullet manually."
         }
@@ -75,7 +88,7 @@ class BulletRewriterActivity : AppCompatActivity() {
         rewriteButton.setOnClickListener {
             val manualBullet = bulletInput.text.toString().trim()
             val selectedBullet = if (extractedBullets.isNotEmpty()) {
-                resumeBulletSpinner.selectedItem?.toString()?.trim() ?: ""
+                extractedBullets.getOrNull(resumeBulletSpinner.selectedItemPosition)?.trim() ?: ""
             } else {
                 ""
             }
@@ -125,12 +138,23 @@ class BulletRewriterActivity : AppCompatActivity() {
         return seen.take(20)
     }
 
+    private fun shortBulletPreview(bullet: String): String {
+        return if (bullet.length <= 72) {
+            bullet
+        } else {
+            "${bullet.take(69).trimEnd()}..."
+        }
+    }
+
     private fun buildRewriteOutput(input: String, profession: String): String {
         val profile = profileForProfession(profession)
         val cleanedInput = cleanBulletTask(input)
         val suggestedVerbs = profile.actionVerbs.distinct().joinToString("\n") { "• $it" }
 
         return """
+            Original Bullet:
+            • ${input.trim().removePrefix("•").removePrefix("-").removePrefix("*").trim()}
+
             Improved Bullet:
             • ${profile.primaryVerb} $cleanedInput to improve ${profile.outcomePhrase}.
 
@@ -163,7 +187,20 @@ class BulletRewriterActivity : AppCompatActivity() {
             "assisted with",
             "involved in",
             "participated in",
-            "contributed to"
+            "contributed to",
+            "developed",
+            "optimized",
+            "analyzed",
+            "automated",
+            "documented",
+            "streamlined",
+            "managed",
+            "prioritized",
+            "improved",
+            "increased",
+            "reduced",
+            "designed",
+            "coordinated"
         )
 
         for (phrase in weakPhrases) {

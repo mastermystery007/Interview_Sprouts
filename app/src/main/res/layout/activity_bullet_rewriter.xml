@@ -33,11 +33,32 @@
         <Spinner
             android:id="@+id/spinnerResumeBullets"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:background="#F7F7F7"
-            android:minHeight="48dp"
+            android:minHeight="56dp"
             android:padding="8dp"
+            android:visibility="gone" />
+
+
+
+        <TextView
+            android:id="@+id/textSelectedFullBullet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="#F7F7F7"
+            android:breakStrategy="simple"
+            android:ellipsize="none"
+            android:hyphenationFrequency="none"
+            android:lineSpacingExtra="4dp"
+            android:maxLines="1000"
+            android:padding="12dp"
+            android:scrollHorizontally="false"
+            android:singleLine="false"
+            android:textColor="#111111"
+            android:textIsSelectable="true"
+            android:textSize="14sp"
             android:visibility="gone" />
 
         <EditText
@@ -68,7 +89,8 @@
         <Spinner
             android:id="@+id/spinnerProfession"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
             android:layout_marginTop="8dp"
             android:background="#F7F7F7"
             android:padding="8dp" />
@@ -89,7 +111,13 @@
             android:text="Your rewritten bullet will appear here."
             android:textColor="#111111"
             android:textIsSelectable="true"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:singleLine="false"
+            android:maxLines="1000"
+            android:ellipsize="none"
+            android:scrollHorizontally="false"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none" />
 
     </LinearLayout>
 </ScrollView>
