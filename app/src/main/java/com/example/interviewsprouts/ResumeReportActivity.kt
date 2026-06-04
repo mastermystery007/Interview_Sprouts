@@ -33,8 +33,11 @@ class ResumeReportActivity : AppCompatActivity() {
         val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
         val textUnlockedBulletSuggestions = findViewById<TextView>(R.id.textUnlockedBulletSuggestions)
         val textUnlockedInterviewQuestions = findViewById<TextView>(R.id.textUnlockedInterviewQuestions)
+        val textAdvancedLockedMessage = findViewById<TextView>(R.id.textAdvancedLockedMessage)
+        val textAdvancedLlmReview = findViewById<TextView>(R.id.textAdvancedLlmReview)
 
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
+        val btnUnlockAdvancedLlmReview = findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
         val btnSaveReport = findViewById<Button>(R.id.btnSaveReport)
 
         val report = createResumeReport(
@@ -67,6 +70,28 @@ class ResumeReportActivity : AppCompatActivity() {
                     textLockedReportMessage.visibility = View.GONE
                     textUnlockedBulletSuggestions.visibility = View.VISIBLE
                     textUnlockedInterviewQuestions.visibility = View.VISIBLE
+                    textAdvancedLockedMessage.visibility = View.VISIBLE
+                    btnUnlockAdvancedLlmReview.visibility = View.VISIBLE
+                    textAdvancedLlmReview.visibility = View.GONE
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        btnUnlockAdvancedLlmReview.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Simulated Ad")
+                .setMessage("In the real app, another rewarded ad will unlock the Advanced AI Review. For now, tap Continue to unlock.")
+                .setPositiveButton("Continue") { _, _ ->
+                    textAdvancedLlmReview.text = generateAdvancedLlmReview(
+                        resumeText = resumeText,
+                        targetRole = targetRole,
+                        experienceLevel = experienceLevel,
+                        jobSpecification = jobSpecification
+                    )
+                    textAdvancedLlmReview.visibility = View.VISIBLE
+                    textAdvancedLockedMessage.visibility = View.GONE
+                    btnUnlockAdvancedLlmReview.visibility = View.GONE
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -80,6 +105,103 @@ class ResumeReportActivity : AppCompatActivity() {
             )
             Toast.makeText(this, "Report saved locally on this device.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun generateAdvancedLlmReview(
+        resumeText: String,
+        targetRole: String,
+        experienceLevel: String,
+        jobSpecification: String
+    ): String {
+        // TODO: Replace this offline placeholder with backend call to DeepSeek V4 Flash. Do not call DeepSeek directly from Android.
+        // DeepSeek API key must never be stored in Android.
+        // Resume text should not be logged.
+        // Backend should handle privacy, rate limits, and prompt construction for Android → backend → DeepSeek V4 Flash.
+        val tailoredSuggestions = generateTailoredJobDescriptionSuggestions(
+            resumeText = resumeText,
+            jobSpecification = jobSpecification,
+            targetRole = targetRole
+        )
+        val metricSignalCount = countMetricSignals(resumeText)
+        val sectionSignals = detectSectionSignals(resumeText)
+        val bulletExamples = extractCandidateBullets(resumeText).take(2)
+        val bulletFocus = if (bulletExamples.isEmpty()) {
+            "• Add 2–4 role-relevant bullets that start with strong action verbs, mention real tools or responsibilities, and include true placeholders for metrics such as [X%], [number], or [hours]."
+        } else {
+            bulletExamples.joinToString("\n") { bullet ->
+                val cleanedTask = cleanBulletTask(bullet)
+                "• Rewrite: $cleanedTask — clarify the action, tool/context, audience, and true measurable result for $targetRole."
+            }
+        }
+        val jdQuestion = if (jobSpecification.isBlank()) {
+            "How would you adapt your resume if a job description emphasized tools, responsibilities, or outcomes not currently shown?"
+        } else {
+            "Which job-description requirement is strongest in your resume, and which one needs honest evidence before you add it?"
+        }
+
+        return """
+Advanced AI Review:
+• Offline placeholder assessment for a future backend-powered DeepSeek V4 Flash response.
+• Target role: $targetRole.
+• Experience level: $experienceLevel.
+• Resume structure signals found: ${sectionSignals.joinToString(", ").ifBlank { "limited section signals" }}.
+• Measurable-impact signals found: $metricSignalCount. Strengthen bullets by adding only true metrics, scope, tools, and outcomes.
+
+Tailored Job Description Suggestions:
+$tailoredSuggestions
+
+Advanced Bullet Rewrite Strategy:
+$bulletFocus
+• Use this pattern: Action Verb + Task + Tool/Context + Audience + True Result.
+• Keep placeholders like [X%], [number], and [hours] until you can replace them with real evidence.
+
+Advanced Interview Questions:
+1. Walk me through the resume achievement that best proves readiness for $targetRole, including the problem, your action, and the measurable outcome.
+2. What tradeoff or constraint did you face in a project or responsibility listed on your resume, and how did you decide what to prioritize?
+3. $jdQuestion
+4. Which bullet would you rewrite first for a $targetRole interview, and what evidence would you use to defend every claim?
+5. How would you explain a missing keyword honestly if an interviewer asks why it is not already reflected in your resume?
+
+Truth Warning:
+Only add skills, metrics, and responsibilities that are true.
+        """.trimIndent()
+    }
+
+    private fun generateTailoredJobDescriptionSuggestions(
+        resumeText: String,
+        jobSpecification: String,
+        targetRole: String
+    ): String {
+        if (jobSpecification.isBlank()) {
+            return "Paste a job description to get tailored resume suggestions."
+        }
+
+        val jdKeywords = extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase())
+        val expandedKeywords = (jdKeywords + getRoleKeywordBank(targetRole.lowercase()))
+            .distinctBy { keyword -> keyword.lowercase() }
+            .filter { keyword -> jobSpecification.contains(keyword, ignoreCase = true) }
+        val resumeLower = resumeText.lowercase()
+        val matchedKeywords = expandedKeywords.filter { keyword -> resumeLower.contains(keyword.lowercase()) }
+        val missingKeywords = expandedKeywords.filterNot { keyword -> resumeLower.contains(keyword.lowercase()) }
+
+        val matchedText = matchedKeywords.take(12).joinToString("\n") { keyword -> "• $keyword" }
+            .ifBlank { "• No clear matched JD keywords detected yet." }
+        val missingText = missingKeywords.take(12).joinToString("\n") { keyword -> "• $keyword" }
+            .ifBlank { "• No obvious missing JD keywords from the known keyword list." }
+        val whereToAddText = missingKeywords.take(8).joinToString("\n") { keyword ->
+            "• $keyword — add under ${suggestWhereToAddKeyword(keyword)} only if true."
+        }.ifBlank { "• Keep evidence-focused bullets aligned to the job description without adding fake skills." }
+
+        return """
+Matched JD Keywords:
+$matchedText
+
+Missing JD Keywords:
+$missingText
+
+Where to Add Them:
+$whereToAddText
+        """.trimIndent()
     }
 
     private fun saveReportLocally(
@@ -169,7 +291,20 @@ class ResumeReportActivity : AppCompatActivity() {
             "assisted with",
             "involved in",
             "participated in",
-            "contributed to"
+            "contributed to",
+            "developed",
+            "optimized",
+            "analyzed",
+            "automated",
+            "documented",
+            "streamlined",
+            "managed",
+            "prioritized",
+            "improved",
+            "increased",
+            "reduced",
+            "designed",
+            "coordinated"
         )
 
         for (phrase in weakPhrases) {
