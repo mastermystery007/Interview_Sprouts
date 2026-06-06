@@ -23,6 +23,7 @@ backend/node_modules/
 backend/package-lock.json
 
 # Backend secrets
+backend/.env.example
 backend/.env
 backend/.env.*
 .env

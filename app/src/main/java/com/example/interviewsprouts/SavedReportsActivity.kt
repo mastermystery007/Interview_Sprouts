@@ -33,9 +33,9 @@ class SavedReportsActivity : AppCompatActivity() {
     private fun loadSavedReportsText(): String {
         val rawJson = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_REPORTS, "[]") ?: "[]"
         val reports = JSONArray(rawJson)
-        if (reports.length() == 0) return "No saved reports yet."
+        if (reports.length() == 0) return "No saved reports yet.\n\nSaved reports are stored locally on this device only."
 
-        val builder = StringBuilder()
+        val builder = StringBuilder("Saved reports are stored locally on this device only.\n\n")
         for (index in reports.length() - 1 downTo 0) {
             val report = reports.getJSONObject(index)
             builder.append("Report ${reports.length() - index}\n")

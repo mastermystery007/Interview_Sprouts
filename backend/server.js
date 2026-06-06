@@ -70,7 +70,7 @@ app.post('/api/analyze-resume', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a resume review assistant. Return only valid JSON with keys advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error.'
+            content: 'You are a resume review assistant. Return only valid JSON with keys advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences.'
           },
           {
             role: 'user',
@@ -90,10 +90,12 @@ app.post('/api/analyze-resume', async (req, res) => {
     const parsed = parseJsonContent(content);
 
     return res.json({
-      advancedReview: parsed.advancedReview || '',
-      tailoredResumeSuggestions: parsed.tailoredResumeSuggestions || '',
-      interviewQuestions: parsed.interviewQuestions || '',
-      bulletRewriteSuggestions: parsed.bulletRewriteSuggestions || '',
+      advancedReview: toReadableString(parsed.advancedReview),
+      tailoredResumeSuggestions: toReadableString(
+        parsed.tailoredResumeSuggestions || combineOptimizedAndMissing(parsed)
+      ),
+      interviewQuestions: toReadableString(parsed.interviewQuestions),
+      bulletRewriteSuggestions: toReadableString(parsed.bulletRewriteSuggestions),
       error: parsed.error || null
     });
   } catch (error) {
@@ -109,21 +111,57 @@ Target role: ${targetRole}
 Experience level: ${experienceLevel}
 Job description provided: ${jobSpecification ? 'yes' : 'no'}
 
-Strict requirements:
-- If a job description is present, provide tailored JD-based resume suggestions.
-- Generate 8-10 detailed interview questions based only on actual resume content.
-- Do not include generic questions such as tell me about yourself, why this role, strengths/weaknesses, teamwork/conflict, or first 30 days.
-- Provide up to 3 bullet rewrites.
-- Do not invent fake metrics, skills, responsibilities, tools, employers, or achievements.
-- Use placeholders only when needed: [X%], [number], [hours].
-- Every interview question must cite an actual short resume excerpt or detected skill/signal.
+Return a concise mobile-friendly JSON answer with these sections:
 
-Return JSON exactly in this shape:
+1. advancedReview
+- Section label: Advanced Review
+- Concise fit assessment.
+- Strong evidence from resume.
+- Weak or missing evidence.
+- No assumptions.
+
+2. tailoredResumeSuggestions
+- Include the labels: Optimized Resume Points and Missing JD-Based Points.
+- Optimized Resume Points: 5-8 optimized points the user can add or improve, based only on existing resume evidence.
+- Do not invent experience.
+- If suggesting a skill/tool not in resume, phrase it as: "Add this only if true" or "Build a small project before adding this."
+- Missing JD-Based Points when job description is present: matched JD keywords with resume evidence, missing JD keywords or weak evidence, where to add them (Skills / Experience / Projects / Summary), and always include "only if true".
+- If job description is absent: say JD-specific suggestions require a pasted job description.
+
+3. interviewQuestions
+- Section label: Resume-Specific Interview Questions.
+- Generate exactly 8-10 questions.
+- Every question must reference an actual resume excerpt, project, skill, tool, metric, or JD requirement.
+- No generic questions.
+- Each question should use this format:
+  Q1. ...
+  Based on: "..."
+  Why this may be asked: ...
+  Strong answer should mention:
+  • ...
+  • ...
+  Follow-up probe: ...
+
+4. bulletRewriteSuggestions
+- Optional Resume Point Rewrites only.
+- Keep this short and do not focus mainly on metric bullet versions.
+
+Rules:
+1. Do not say skills are "implicit", "likely", or "assumed".
+2. If a JD skill is missing, say it is missing/not clearly evidenced.
+3. Do not invent tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
+4. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless resume explicitly supports it.
+5. Do not invent exact metrics.
+6. Use placeholders only if needed: [X%], [number], [hours], [amount].
+7. Do not return markdown code fences.
+8. Return valid JSON only.
+
+Return JSON exactly in this Android-compatible shape:
 {
-  "advancedReview": "...",
-  "tailoredResumeSuggestions": "...",
-  "interviewQuestions": "...",
-  "bulletRewriteSuggestions": "...",
+  "advancedReview": "Advanced Review\\n...",
+  "tailoredResumeSuggestions": "Optimized Resume Points\\n...\\n\\nMissing JD-Based Points\\n...",
+  "interviewQuestions": "Resume-Specific Interview Questions\\nQ1. ...",
+  "bulletRewriteSuggestions": "Optional Resume Point Rewrites\\n...",
   "error": null
 }
 
@@ -140,7 +178,7 @@ function parseJsonContent(content) {
   }
 
   try {
-    return JSON.parse(content);
+    return JSON.parse(stripCodeFences(content).trim());
   } catch (_error) {
     return {
       advancedReview: content,
@@ -150,6 +188,53 @@ function parseJsonContent(content) {
       error: null
     };
   }
+}
+
+function combineOptimizedAndMissing(parsed) {
+  const optimized = toReadableString(parsed.optimizedResumePoints);
+  const missing = toReadableString(parsed.missingJobDescriptionPoints);
+  return [
+    optimized ? `Optimized Resume Points\n${optimized}` : '',
+    missing ? `Missing JD-Based Points\n${missing}` : ''
+  ].filter(Boolean).join('\n\n');
+}
+
+function toReadableString(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return stripCodeFences(value).trim();
+  if (Array.isArray(value)) {
+    return value.map((item, index) => {
+      if (typeof item === 'string') return `• ${stripCodeFences(item).trim()}`;
+      return `• ${stringifyObject(item, index)}`;
+    }).join('\n');
+  }
+  if (typeof value === 'object') return stringifyObject(value);
+  return String(value);
+}
+
+function stringifyObject(value) {
+  return Object.entries(value)
+    .map(([key, item]) => {
+      if (Array.isArray(item)) {
+        return `${formatLabel(key)}:\n${item.map((entry) => `• ${toReadableString(entry)}`).join('\n')}`;
+      }
+      if (item && typeof item === 'object') {
+        return `${formatLabel(key)}:\n${stringifyObject(item)}`;
+      }
+      return `${formatLabel(key)}: ${toReadableString(item)}`;
+    })
+    .join('\n');
+}
+
+function formatLabel(key) {
+  return key
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_-]+/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
+function stripCodeFences(value) {
+  return value.replace(/```(?:json)?/gi, '').replace(/```/g, '');
 }
 
 function emptyResponse(error) {
