@@ -115,10 +115,26 @@ Return a concise mobile-friendly JSON answer.
 
 This app supports many roles, including software, data, business analyst, recruiter, HR, sales, marketing, finance, operations, product, UX/design, and general business roles. Adapt the review and questions to the actual target role. Do not assume the role is technical unless the target role, job description, or resume clearly indicates it.
 
+If a job description is provided:
+
+* Treat the job description as the primary target for matching.
+* Compare the resume directly against the JD requirements, responsibilities, tools, skills, domain keywords, and expected outcomes.
+* Identify which JD requirements are clearly evidenced in the resume.
+* Identify which JD requirements are missing or weakly evidenced.
+* In tailoredResumeSuggestions, at least 2 of the 4 bullets must address JD-specific gaps, weak JD evidence, or better positioning for the JD.
+* Suggest where JD-related evidence could be added: Summary, Skills, Experience, Projects, Certifications, Achievements, or Education.
+* Do not claim the candidate has a JD skill unless it is present in the resume.
+* If a JD requirement is missing, say it is not clearly evidenced and suggest adding it only if the candidate can truthfully support it.
+
+If no job description is provided:
+
+* Generate suggestions from the target role and resume only.
+* Mention in one suggestion bullet that adding a JD would allow more custom matching.
+
 Required output limits:
 
-* advancedReview: exactly 4 separate bullet lines maximum.
-* tailoredResumeSuggestions: exactly 4 bullet lines maximum.
+* advancedReview: exactly 4 separate bullet lines.
+* tailoredResumeSuggestions: exactly 4 bullet lines.
 * interviewQuestions: exactly 4 questions, not 5, not 8, not 10.
 * Questions only. No answers, no hints, no "Strong answer should mention", no "Based on", no "Why this may be asked", no "Follow-up probe", no "Answer", and no "Suggested answer".
 * bulletRewriteSuggestions: null.
@@ -127,7 +143,7 @@ Required output limits:
 
 1. advancedReview
 
-Return up to 4 bullets only.
+Return exactly 4 bullets only.
 
 Each bullet must:
 
@@ -159,13 +175,13 @@ If evidence is missing, say it is not clearly evidenced. Do not invent metrics.
 
 Visible Android title will be "Resume Improvement Suggestions". Do not include any section heading inside this field.
 
-Return exactly 4 bullets maximum.
+Return exactly 4 bullets.
 
 Rules:
 
 * Mix resume improvements and JD-gap improvements in one list.
-* If a job description is provided, include 1–2 bullets about JD requirements that are not clearly evidenced.
-* If no job description is provided, use all 4 bullets for role-relevant resume improvements.
+* If a job description is provided, at least 2 bullets must address JD-specific gaps, weak JD evidence, or better positioning for the JD.
+* If no job description is provided, include one bullet explaining that adding a JD would allow more custom matching, and use the remaining bullets for role-relevant resume improvements.
 * Each bullet must start with "• ".
 * Each bullet must be one sentence only.
 * Do not include sub-bullets.

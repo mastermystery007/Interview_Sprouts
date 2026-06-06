@@ -22,6 +22,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAlignment="center"
                 android:text="Resume Review"
                 android:textColor="#111111"
                 android:textSize="28sp"
@@ -31,6 +33,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textAlignment="center"
                 android:text="Upload your resume and compare it against your target role or job description."
                 android:textColor="#334155"
                 android:textSize="15sp" />
@@ -47,6 +51,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAlignment="center"
                 android:text="Resume PDF"
                 android:textColor="#111111"
                 android:textSize="17sp"
@@ -98,6 +104,8 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAlignment="center"
                 android:text="Target details"
                 android:textColor="#111111"
                 android:textSize="17sp"
@@ -163,7 +171,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="JD text helps find missing skills, tools, and responsibilities."
+                android:text="Add a job description for custom suggestions, missing-skill checks, sharper role matching, and JD-specific interview questions."
                 android:textColor="#64748B"
                 android:textSize="12sp" />
         </LinearLayout>

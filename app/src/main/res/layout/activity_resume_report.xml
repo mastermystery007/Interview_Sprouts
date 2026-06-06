@@ -39,7 +39,7 @@
                     android:id="@+id/textReportTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="InterviewSprout · Score Analysis"
+                    android:text="Score Analysis"
                     android:textColor="#111111"
                     android:textSize="20sp"
                     android:textStyle="bold" />
