@@ -42,6 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
+            android:gravity="center"
             android:text="Start here"
             android:textColor="#111111"
             android:textSize="18sp"

@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 object AiClient {
     // For local phone testing, replace YOUR_LAPTOP_IP with the laptop’s Wi-Fi IPv4 address, for example http://192.168.1.45:3000/. This is only the backend URL, not an API key.
     // DeepSeek key must stay only in backend/.env or deployment env variables.
-    private const val BACKEND_BASE_URL = "http://YOUR_LAPTOP_IP:3000/"
+    private const val BACKEND_BASE_URL = "http://192.168.1.228:3000/"
     private val retrofitBaseUrl = if (isPlaceholderBackendUrl()) {
         "https://example.com/"
     } else {

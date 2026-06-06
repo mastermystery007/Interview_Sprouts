@@ -118,20 +118,27 @@ Return a concise mobile-friendly JSON answer with these sections:
 - Concise fit assessment.
 - Strong evidence from resume.
 - Weak or missing evidence.
+- Advanced AI Review: max 4 bullets.
 - No assumptions.
 
 2. tailoredResumeSuggestions
 - Include the labels: Optimized Resume Points and Missing JD-Based Points.
-- Optimized Resume Points: 5-8 optimized points the user can add or improve, based only on existing resume evidence.
+- Optimized Resume Points: max 4 optimized points the user can add or improve, based only on existing resume evidence.
+- Missing JD-Based Points: max 4 bullets when job description is present.
 - Focus on truthful clarity, role alignment, responsibilities, tools already evidenced, and concrete outcomes already evidenced; do not focus on metric bullet versions.
 - Do not invent experience.
-- If suggesting a skill/tool not in resume, phrase it as: "Add this only if true" or "Build a small project before adding this."
-- Missing JD-Based Points when job description is present: matched JD keywords with resume evidence, missing JD keywords or weak evidence, where to add them (Skills / Experience / Projects / Summary), and always include "only if true".
+- For missing JD skills or suggested skills/tools not clearly present in the resume, use "only if true" only where needed.
+- Do not append "only if true" to every bullet.
+- Do not repeat safety disclaimers excessively.
+- If a missing technical skill is important, say: "Add this only if true, or build a small project before adding it."
+- Include one short honesty reminder at the end of tailoredResumeSuggestions if needed.
+- Missing JD-Based Points when job description is present: matched JD keywords with resume evidence, missing JD keywords or weak evidence, and where to add them (Skills / Experience / Projects / Summary).
 - If job description is absent: say JD-specific suggestions require a pasted job description.
 
 3. interviewQuestions
 - Section label: Resume-Specific Interview Questions.
-- Generate exactly 8-10 questions.
+- Interview Questions: exactly 4 questions.
+- Generate exactly 4 focused questions.
 - Every question must reference an actual resume excerpt, project, skill, tool, metric, or JD requirement.
 - No generic questions.
 - Do not ask generic questions such as:
@@ -157,17 +164,23 @@ Return a concise mobile-friendly JSON answer with these sections:
 
 4. bulletRewriteSuggestions
 - Optional Resume Point Rewrites only.
+- Optional Resume Point Rewrites: max 3 bullets.
 - Keep this short and do not focus mainly on metric bullet versions.
 
 Rules:
-1. Do not say skills are "implicit", "likely", or "assumed".
-2. If a JD skill is missing, say it is missing/not clearly evidenced and should be added only if true.
-3. Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
-4. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless resume explicitly supports it.
-5. Do not invent exact metrics.
-6. Use placeholders only if needed: [X%], [number], [hours], [amount].
-7. Do not return markdown code fences.
-8. Return valid JSON only.
+1. Keep the full response concise and mobile-friendly.
+2. Avoid long paragraphs.
+3. Do not repeat the same safety phrase after every bullet.
+4. Do not say skills are "implicit", "likely", or "assumed".
+5. If a JD skill is missing, say it is missing/not clearly evidenced.
+6. Use "only if true" only for missing JD skills or suggested skills/tools not clearly present in the resume.
+7. If a missing technical skill is important, say: "Add this only if true, or build a small project before adding it."
+8. Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
+9. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless resume explicitly supports it.
+10. Do not invent exact metrics.
+11. Use placeholders only if needed: [X%], [number], [hours], [amount].
+12. Do not return markdown code fences.
+13. Return valid JSON only.
 
 Return JSON exactly in this Android-compatible shape:
 {

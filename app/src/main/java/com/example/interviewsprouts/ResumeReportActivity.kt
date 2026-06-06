@@ -1,6 +1,12 @@
 package com.example.interviewsprouts
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.StyleSpan
+import android.graphics.Typeface
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -27,6 +33,9 @@ class ResumeReportActivity : AppCompatActivity() {
     private lateinit var tabKeywords: TextView
     private lateinit var tabBespoke: TextView
     private lateinit var textTabContent: TextView
+    private val advancedLoadingHandler = Handler(Looper.getMainLooper())
+    private var advancedLoadingRunnable: Runnable? = null
+    private var advancedLoadingDotCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,9 +61,9 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.chipJdStatus).text = if (jdProvided) "JD Provided" else "No JD"
         findViewById<ScoreCircleView>(R.id.scoreCircleView).setScore(report.overallScore)
 
-        findViewById<TextView>(R.id.textBasicFeedback).text = report.basicFeedback
+        findViewById<TextView>(R.id.textBasicFeedback).text = applyReportFormatting(report.basicFeedback)
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
-        findViewById<TextView>(R.id.textFullReport).text = report.fullReport
+        findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
         findViewById<TextView>(R.id.textAdvancedLockedMessage).text =
             "Advanced AI review with optimized resume points, JD-specific missing points, and detailed resume-based interview questions is locked. Watch another ad to unlock.\n\nAdvanced AI review sends your resume text and job description to our backend only after this second unlock."
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
@@ -87,15 +96,28 @@ class ResumeReportActivity : AppCompatActivity() {
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
         val btnUnlockAdvancedLlmReview = findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
 
+        tabScrollContainer.visibility = View.VISIBLE
+        textTabContent.visibility = View.VISIBLE
+        tabOverview.visibility = View.VISIBLE
+        tabStrengths.visibility = View.GONE
+        tabGaps.visibility = View.GONE
+        tabKeywords.visibility = View.GONE
+        tabBespoke.visibility = View.GONE
+        selectTab(tabOverview, report.overviewContent)
+
         btnUnlockFullReport.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Simulated Ad")
                 .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
-                    textFullReport.visibility = View.VISIBLE
                     tabScrollContainer.visibility = View.VISIBLE
                     textTabContent.visibility = View.VISIBLE
-                    selectTab(tabOverview, report.overviewContent)
+                    tabOverview.visibility = View.VISIBLE
+                    tabStrengths.visibility = View.VISIBLE
+                    tabGaps.visibility = View.VISIBLE
+                    tabKeywords.visibility = View.VISIBLE
+                    tabBespoke.visibility = View.VISIBLE
+                    textFullReport.visibility = View.VISIBLE
                     textUnlockedPointSuggestions.visibility = View.GONE
                     textUnlockedInterviewQuestions.visibility = View.GONE
                     textLockedReportMessage.visibility = View.GONE
@@ -113,8 +135,8 @@ class ResumeReportActivity : AppCompatActivity() {
                 .setTitle("Simulated Ad")
                 .setMessage("In the real app, another rewarded ad will unlock the Advanced AI Review. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
-                    textAdvancedLlmReview.text = "Generating Advanced AI Review..."
                     textAdvancedLlmReview.visibility = View.VISIBLE
+                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
                     textAdvancedLockedMessage.visibility = View.GONE
                     btnUnlockAdvancedLlmReview.visibility = View.GONE
                     requestAdvancedAiReview(resumeText, targetRole, experienceLevel, jobSpecification, textAdvancedLlmReview)
@@ -129,12 +151,37 @@ class ResumeReportActivity : AppCompatActivity() {
         }
     }
 
+    private fun startAdvancedLoadingAnimation(textView: TextView) {
+        stopAdvancedLoadingAnimation()
+        advancedLoadingDotCount = 0
+        advancedLoadingRunnable = object : Runnable {
+            override fun run() {
+                val dots = ".".repeat(advancedLoadingDotCount)
+                textView.text = "Generating Advanced AI Review$dots"
+                advancedLoadingDotCount = (advancedLoadingDotCount + 1) % 4
+                advancedLoadingHandler.postDelayed(this, 500L)
+            }
+        }
+        advancedLoadingRunnable?.run()
+    }
+
+    private fun stopAdvancedLoadingAnimation() {
+        advancedLoadingRunnable?.let { advancedLoadingHandler.removeCallbacks(it) }
+        advancedLoadingRunnable = null
+        advancedLoadingDotCount = 0
+    }
+
+    override fun onDestroy() {
+        stopAdvancedLoadingAnimation()
+        super.onDestroy()
+    }
+
     private fun selectTab(selected: TextView, content: String) {
         listOf(tabOverview, tabStrengths, tabGaps, tabKeywords, tabBespoke).forEach { tab ->
             tab.setBackgroundResource(if (tab == selected) R.drawable.bg_tab_selected else R.drawable.bg_chip)
             tab.setTextColor(if (tab == selected) 0xFF0B63CE.toInt() else 0xFF333333.toInt())
         }
-        textTabContent.text = content
+        textTabContent.text = applyReportFormatting(content)
     }
 
     private fun requestAdvancedAiReview(
@@ -145,7 +192,8 @@ class ResumeReportActivity : AppCompatActivity() {
         textAdvancedLlmReview: TextView
     ) {
         if (AiClient.isPlaceholderBackendUrl()) {
-            textAdvancedLlmReview.text = buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification)
+            stopAdvancedLoadingAnimation()
+            textAdvancedLlmReview.text = applyReportFormatting(buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification))
             return
         }
 
@@ -165,27 +213,96 @@ class ResumeReportActivity : AppCompatActivity() {
         AiClient.service.analyzeResume(request).enqueue(object : Callback<ResumeAiResponse> {
             override fun onResponse(call: Call<ResumeAiResponse>, response: Response<ResumeAiResponse>) {
                 val body = response.body()
-                textAdvancedLlmReview.text = if (response.isSuccessful && body != null && body.error.isNullOrBlank()) {
-                    formatBackendAdvancedReview(body)
-                } else {
-                    buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification)
-                }
+                stopAdvancedLoadingAnimation()
+                textAdvancedLlmReview.text = applyReportFormatting(
+                    if (response.isSuccessful && body != null && body.error.isNullOrBlank()) {
+                        formatBackendAdvancedReview(body)
+                    } else {
+                        buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification)
+                    }
+                )
             }
 
             override fun onFailure(call: Call<ResumeAiResponse>, t: Throwable) {
-                textAdvancedLlmReview.text = buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification)
+                stopAdvancedLoadingAnimation()
+                textAdvancedLlmReview.text = applyReportFormatting(buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification))
             }
         })
     }
 
     private fun formatBackendAdvancedReview(response: ResumeAiResponse): String {
         val sections = mutableListOf<String>()
-        response.advancedReview.takeIf { it.isNotBlank() }?.let { sections.add("Advanced AI Review\n$it") }
-        response.tailoredResumeSuggestions.takeIf { it.isNotBlank() }?.let { sections.add("Optimized Resume Points + Missing JD-Based Points\n$it") }
-        response.interviewQuestions.takeIf { it.isNotBlank() }?.let { sections.add("Resume-Specific Interview Questions\n$it") }
-        response.bulletRewriteSuggestions.takeIf { it.isNotBlank() }?.let { sections.add("Optional Resume Point Rewrites\n$it") }
+        response.advancedReview.takeIf { it.isNotBlank() }?.let {
+            sections.add(formatSection("Advanced AI Review", it, "Advanced AI Review", "Advanced Review"))
+        }
+        response.tailoredResumeSuggestions.takeIf { it.isNotBlank() }?.let {
+            sections.add(
+                formatSection(
+                    "Optimized Resume Points + Missing JD-Based Points",
+                    it,
+                    "Optimized Resume Points",
+                    "Missing JD-Based Points",
+                    "Optimized Resume Points + Missing JD-Based Points"
+                )
+            )
+        }
+        response.interviewQuestions.takeIf { it.isNotBlank() }?.let {
+            sections.add(formatSection("Resume-Specific Interview Questions", it, "Resume-Specific Interview Questions", "Interview Questions"))
+        }
+        response.bulletRewriteSuggestions.takeIf { it.isNotBlank() }?.let {
+            sections.add(formatSection("Optional Resume Point Rewrites", it, "Optional Resume Point Rewrites", "Optional Resume Point Rewrites / cleanup notes"))
+        }
         return sections.joinToString("\n\n").ifBlank { "AI backend returned no usable content. Showing offline fallback is recommended." }
     }
+
+    private fun formatSection(sectionHeading: String, content: String, vararg duplicateHeadings: String): String {
+        val cleaned = stripLeadingHeading(content, *duplicateHeadings)
+        return "$sectionHeading\n$cleaned"
+    }
+
+    private fun stripLeadingHeading(text: String, vararg headings: String): String {
+        var cleaned = text.trim()
+        headings.forEach { heading ->
+            val pattern = Regex("^" + Regex.escape(heading) + "\\s*[:：-]?\\s*", RegexOption.IGNORE_CASE)
+            cleaned = cleaned.replaceFirst(pattern, "").trimStart()
+        }
+        return cleaned.trim()
+    }
+
+    private fun applyReportFormatting(text: String): CharSequence {
+        val builder = SpannableStringBuilder(text)
+        val headings = listOf(
+            "Missing keywords:",
+            "Missing important sections:",
+            "Weak bullets:",
+            "Missing measurable impact:",
+            "Role Keywords Found:",
+            "Role Keywords Missing:",
+            "JD Keywords Found:",
+            "JD Keywords Missing:",
+            "JD-specific missing points:",
+            "JD keywords already evidenced:",
+            "Advanced AI Review",
+            "Metric Evidence Detected",
+            "Optimized Resume Points",
+            "Missing JD-Based Points",
+            "Resume-Specific Interview Questions",
+            "Optional Resume Point Rewrites",
+            "Full Heuristic Analysis",
+            "Category Findings:"
+        )
+        headings.forEach { heading ->
+            var searchStart = 0
+            while (searchStart < text.length) {
+                val index = text.indexOf(heading, searchStart, ignoreCase = true)
+                if (index == -1) break
+                builder.setSpan(StyleSpan(Typeface.BOLD), index, index + heading.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                searchStart = index + heading.length
+            }
+        }
+        return builder
+    }
+
 
     private fun buildOfflineAdvancedFallback(
         resumeText: String,
@@ -200,7 +317,7 @@ class ResumeReportActivity : AppCompatActivity() {
         experienceLevel: String,
         jobSpecification: String
     ): String {
-        val bullets = extractCandidateBullets(resumeText).take(6)
+        val bullets = extractCandidateBullets(resumeText).take(4)
         val metrics = extractMetricExamples(resumeText)
         val roleAndJdKeywords = (getKeywordsForRole(targetRole) + extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase()))
             .distinctBy { it.lowercase() }
@@ -235,14 +352,15 @@ class ResumeReportActivity : AppCompatActivity() {
 Advanced AI Review
 • Target role: $targetRole ($experienceLevel).
 • Strong evidence: ${bullets.take(2).joinToString("; ").ifBlank { "Add clearer role evidence from your resume." }}
-• Weak or missing evidence: ${missingJd.take(5).joinToString(", ").ifBlank { "No major JD-specific weakness detected from available text." }}
+• Weak or missing evidence: ${missingJd.take(4).joinToString(", ").ifBlank { "No major JD-specific weakness detected from available text." }}
 
 Metric Evidence Detected
 $metricEvidence
 
 Optimized Resume Points
 $optimized
-• Only add tools, skills, metrics, and responsibilities that are true.
+
+Honesty reminder: only add tools, skills, metrics, and responsibilities that are true.
 
 Missing JD-Based Points
 $missingText
@@ -280,11 +398,17 @@ $cleanupNotes
         val overallScore = weightedOverallScore(keywordMatchScore, measurableImpactScore, actionVerbScore, sectionClarityScore, roleRelevanceScore)
 
         val foundText = bulletList(foundKeywords, "No matching role/JD keywords detected yet.")
-        val missingText = bulletList(missingKeywords.take(12), "No major missing keyword detected from the current role/JD keyword set.")
+        val missingText = missingKeywords.take(12).joinToString("\n") { keyword ->
+            "• $keyword → ${keywordAddSuggestion(keyword)}"
+        }.ifBlank { "• No major missing keyword detected from the current role/JD keyword set." }
         val foundRoleText = bulletList(foundRoleKeywords, "No matching role keywords detected yet.")
-        val missingRoleText = bulletList(missingRoleKeywords.take(12), "No major missing role keyword detected.")
+        val missingRoleText = missingRoleKeywords.take(12).joinToString("\n") { keyword ->
+            "• $keyword → ${keywordAddSuggestion(keyword)}"
+        }.ifBlank { "• No major missing role keyword detected." }
         val foundJdText = bulletList(foundJdKeywords, "No matching JD keywords detected yet.")
-        val missingJdText = bulletList(missingJdKeywords.take(12), "No major missing JD keyword detected.")
+        val missingJdText = missingJdKeywords.take(12).joinToString("\n") { keyword ->
+            "• $keyword → ${keywordAddSuggestion(keyword)}"
+        }.ifBlank { "• No major missing JD keyword detected." }
         val actionVerbExplanation = explainActionVerbScore(actionVerbScore, resumeText)
         val measurableExplanation = explainMeasurableImpactScore(measurableImpactScore, resumeText)
         val clarityExplanation = explainSectionClarityScore(sectionClarityScore, resumeText)
@@ -360,7 +484,7 @@ JD Keywords Missing:
 $missingJdText
 
 Where to add missing keywords honestly:
-${missingKeywords.take(8).joinToString("\n") { "• $it → ${suggestWhereToAddKeyword(it)} (only if true)" }.ifBlank { "• No priority keyword placement needed from current inputs." }}
+${missingKeywords.take(8).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No priority keyword placement needed from current inputs." }}
         """.trimIndent()
 
         val bespoke = if (jobSpecification.isBlank()) {
@@ -368,7 +492,7 @@ ${missingKeywords.take(8).joinToString("\n") { "• $it → ${suggestWhereToAddK
         } else {
             """
 JD-specific missing points:
-${missingJdKeywords.take(10).joinToString("\n") { "• $it → add under ${suggestWhereToAddKeyword(it)} only if it is true and clearly evidenced." }.ifBlank { "• No major JD-specific keyword gaps detected." }}
+${missingJdKeywords.take(10).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major JD-specific keyword gaps detected." }}
 
 JD keywords already evidenced:
 ${foundJdKeywords.take(10).joinToString("\n") { "• $it" }.ifBlank { "• No clear JD keyword matches detected yet." }}
@@ -583,12 +707,12 @@ ${formatExamples(missing, "No major missing section detected.")}
         }
         signals.addAll(extractCandidateBullets(resumeText))
 
-        val uniqueSignals = signals.map { shortenLabel(it, 120) }.filter { it.isNotBlank() }.distinct().take(8)
+        val uniqueSignals = signals.map { shortenLabel(it, 120) }.filter { it.isNotBlank() }.distinct().take(4)
         if (uniqueSignals.isEmpty()) {
             return "Resume-Specific Interview Questions\n• Add more detailed resume lines so questions can reference real projects, skills, tools, or achievements."
         }
 
-        return uniqueSignals.take(8).mapIndexed { index, signal ->
+        return uniqueSignals.take(4).mapIndexed { index, signal ->
             val focus = when {
                 signal.startsWith("Detected skill/keyword:") -> "how you used this skill in a real $targetRole context"
                 signal.startsWith("JD match:") -> "how this JD requirement appears in your resume evidence"
@@ -628,13 +752,17 @@ ${formatExamples(missing, "No major missing section detected.")}
         .take(12)
 
     private fun findWeakBullets(resumeText: String): List<String> = resumeLines(resumeText)
-        .filter { it.length in 15..140 }
+        .filterNot { isBareStopwordFragment(it) }
+        .filter { isUsefulResumeFragment(it) }
         .filter { line ->
             val lower = line.lowercase()
             lower.startsWith("worked on") || lower.startsWith("responsible for") || lower.startsWith("helped") ||
                 (!Regex("[%0-9]").containsMatchIn(line) && strongActionVerbs.none { lower.contains(it) })
         }
-        .map { shortenLabel(it, 140) }
+        .map { line ->
+            val label = shortenLabel(line, 120)
+            if (looksLikeSplitSentenceFragment(line)) "... $label" else label
+        }
         .distinct()
         .take(5)
 
@@ -642,6 +770,39 @@ ${formatExamples(missing, "No major missing section detected.")}
         .split('\n', '•', '●', '–', '-')
         .map { it.replace(Regex("\\s+"), " ").trim() }
         .filter { it.isNotBlank() }
+        .filterNot { isBareStopwordFragment(it) }
+
+    private fun isBareStopwordFragment(line: String): Boolean {
+        val normalized = line.lowercase()
+            .replace(Regex("""[^a-z]"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+        return normalized in setOf("and", "or", "with", "for", "to", "in", "on", "of", "the", "a", "an")
+    }
+
+    private fun isUsefulResumeFragment(line: String): Boolean {
+        val trimmed = line.trim()
+        if (trimmed.length in 18..140) return true
+        if (trimmed.length > 140) return false
+        return containsMeaningfulTechnicalOrProjectContent(trimmed)
+    }
+
+    private fun containsMeaningfulTechnicalOrProjectContent(line: String): Boolean {
+        val lower = line.lowercase()
+        val meaningfulTerms = listOf(
+            "api", "sql", "python", "java", "kotlin", "android", "dashboard", "project", "app", "database", "analytics",
+            "excel", "tableau", "power bi", "figma", "jira", "agile", "scrum", "crm", "campaign", "research", "prototype"
+        )
+        return meaningfulTerms.any { lower.contains(it) } || Regex("""\d|%|\$""").containsMatchIn(line)
+    }
+
+    private fun looksLikeSplitSentenceFragment(line: String): Boolean {
+        val trimmed = line.trim()
+        if (trimmed.isBlank()) return false
+        val lower = trimmed.lowercase()
+        val fragmentStarters = listOf("and ", "or ", "with ", "for ", "to ", "in ", "on ", "of ")
+        return fragmentStarters.any { lower.startsWith(it) } || trimmed.first().isLowerCase()
+    }
 
     private fun looksLikeHeading(line: String): Boolean = line.length <= 24 && line.uppercase() == line && line.any { it.isLetter() }
 
@@ -707,9 +868,18 @@ ${formatExamples(missing, "No major missing section detected.")}
         val lower = keyword.lowercase()
         return when {
             lower in listOf("sql", "excel", "python", "power bi", "tableau", "google analytics", "jira", "git", "kotlin", "java", "figma", "crm") -> "Skills"
-            lower.contains("project") || lower.contains("dashboard") || lower.contains("prototype") -> "Projects"
-            lower.contains("summary") || lower.contains("communication") || lower.contains("strategy") -> "Summary"
+            lower.contains("project") || lower.contains("dashboard") || lower.contains("prototype") || lower.contains("portfolio") -> "Projects"
+            lower.contains("summary") || lower.contains("communication") || lower.contains("strategy") || lower.contains("leadership") -> "Summary"
             else -> "Experience"
+        }
+    }
+
+    private fun keywordAddSuggestion(keyword: String): String {
+        return when (suggestWhereToAddKeyword(keyword)) {
+            "Skills" -> "Add under Skills if you have used it."
+            "Projects" -> "Add under Projects if your project involved it."
+            "Summary" -> "Add under Summary if you can clearly evidence it."
+            else -> "Add under Experience if you actually did this work."
         }
     }
 
