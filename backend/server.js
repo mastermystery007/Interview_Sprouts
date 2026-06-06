@@ -70,7 +70,7 @@ app.post('/api/analyze-resume', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a resume review assistant. Return only valid JSON with keys advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences.'
+            content: 'You are a resume review assistant. Return only valid JSON with exactly these keys: advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences. Do not include text outside JSON.'
           },
           {
             role: 'user',
@@ -111,84 +111,101 @@ Target role: ${targetRole}
 Experience level: ${experienceLevel}
 Job description provided: ${jobSpecification ? 'yes' : 'no'}
 
-Return a concise mobile-friendly JSON answer with these sections:
+Return a concise mobile-friendly JSON answer.
+
+Content limits:
+
+* advancedReview: maximum 4 bullets.
+* tailoredResumeSuggestions: exactly 4 bullets total.
+* interviewQuestions: exactly 4 questions.
+* bulletRewriteSuggestions: return an empty string unless there is a very clear rewrite opportunity.
+* Avoid long paragraphs.
+* Do not repeat the same warning after every bullet.
 
 1. advancedReview
-- Section label: Advanced AI Review
-- Concise fit assessment.
-- Strong evidence from resume.
-- Weak or missing evidence.
-- Advanced AI Review: max 4 bullets.
-- No assumptions.
+
+Give a concise fit assessment using only resume evidence.
+
+Include:
+
+* 1 bullet on overall fit.
+* 1–2 bullets on strongest evidence.
+* 1–2 bullets on weak or missing evidence.
+
+Do not invent assumptions. Do not say a skill is present unless it is clearly evidenced.
 
 2. tailoredResumeSuggestions
-- Include the labels: Optimized Resume Points and Missing JD-Based Points.
-- Optimized Resume Points: max 4 optimized points the user can add or improve, based only on existing resume evidence.
-- Missing JD-Based Points: max 4 bullets when job description is present.
-- Focus on truthful clarity, role alignment, responsibilities, tools already evidenced, and concrete outcomes already evidenced; do not focus on metric bullet versions.
-- Do not invent experience.
-- For missing JD skills or suggested skills/tools not clearly present in the resume, use "only if true" only where needed.
-- Do not append "only if true" to every bullet.
-- Do not repeat safety disclaimers excessively.
-- If a missing technical skill is important, say: "Add this only if true, or build a small project before adding it."
-- Include one short honesty reminder at the end of tailoredResumeSuggestions if needed.
-- Missing JD-Based Points when job description is present: matched JD keywords with resume evidence, missing JD keywords or weak evidence, and where to add them (Skills / Experience / Projects / Summary).
-- If job description is absent: say JD-specific suggestions require a pasted job description.
+
+Return exactly 4 bullets total.
+
+Start this section with this sentence once:
+"Add suggested skills or tools only if they are true."
+
+Then include:
+
+* 2 bullets under "Optimized Resume Points" based on existing resume evidence.
+* 2 bullets under "Missing JD-Based Points" if a job description is provided.
+* If no job description is provided, use those 2 bullets for role-relevant missing points.
+
+Rules for this section:
+
+* Focus on clarity, role alignment, responsibilities, tools already evidenced, and concrete outcomes already evidenced.
+* Do not invent experience, tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
+* If a JD skill is missing, say it is "not clearly evidenced".
+* If suggesting a missing technical skill, say: "Add this only if true, or build a small project before adding it."
+* For non-technical skills, do not say "build a small project"; instead say where it could be evidenced, such as Skills, Experience, Projects, or Summary.
+* Do not append "only if true" to every bullet.
+* Do not focus mainly on metric rewrites.
 
 3. interviewQuestions
-- Section label: Resume-Specific Interview Questions.
-- Interview Questions: exactly 4 questions.
-- Generate exactly 4 focused questions.
-- Every question must reference an actual resume excerpt, project, skill, tool, metric, or JD requirement.
-- No generic questions.
-- Do not ask generic questions such as:
-  * Tell me about yourself.
-  * Why this role?
-  * What are your strengths/weaknesses?
-  * What would you do in the first 30 days?
-  * Tell me about a conflict/teamwork situation, unless it directly references a resume item.
-  * Describe feedback you received, unless it directly references a resume item.
-- Every question must refer to:
-  * a resume excerpt, OR
-  * a detected skill/tool/project, OR
-  * measurable evidence, OR
-  * a JD requirement.
-- Each question should use this format:
-  Q1. ...
-  Based on: "..."
-  Why this may be asked: ...
-  Strong answer should mention:
-  • ...
-  • ...
-  Follow-up probe: ...
+
+Generate exactly 4 focused questions.
+
+Every question must reference:
+
+* an actual resume excerpt, OR
+* a detected skill/tool/project, OR
+* measurable evidence, OR
+* a JD requirement.
+
+Do not ask generic questions such as:
+
+* Tell me about yourself.
+* Why this role?
+* What are your strengths/weaknesses?
+* What would you do in the first 30 days?
+* Tell me about a conflict/teamwork situation, unless it directly references a resume item.
+* Describe feedback you received, unless it directly references a resume item.
+
+Use this compact format:
+
+Q1. [question]
+Based on: "[resume/JD evidence]"
+Strong answer should mention: [2 short points]
 
 4. bulletRewriteSuggestions
-- Optional Resume Point Rewrites only.
-- Optional Resume Point Rewrites: max 3 bullets.
-- Keep this short and do not focus mainly on metric bullet versions.
+
+Return an empty string unless there is a very clear rewrite opportunity. If used, maximum 2 bullets.
 
 Rules:
-1. Keep the full response concise and mobile-friendly.
-2. Avoid long paragraphs.
-3. Do not repeat the same safety phrase after every bullet.
-4. Do not say skills are "implicit", "likely", or "assumed".
-5. If a JD skill is missing, say it is missing/not clearly evidenced.
-6. Use "only if true" only for missing JD skills or suggested skills/tools not clearly present in the resume.
-7. If a missing technical skill is important, say: "Add this only if true, or build a small project before adding it."
-8. Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
-9. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless resume explicitly supports it.
-10. Do not invent exact metrics.
-11. Use placeholders only if needed: [X%], [number], [hours], [amount].
-12. Do not return markdown code fences.
-13. Return valid JSON only.
+
+1. Use only evidence present in the resume and job description.
+2. Do not say skills are "implicit", "likely", "assumed", or "probably present".
+3. If a JD skill is missing, say it is missing or not clearly evidenced.
+4. Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
+5. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless the resume explicitly supports it.
+6. Do not invent exact metrics.
+7. Use placeholders only if needed: [X%], [number], [hours], [amount].
+8. Return valid JSON only.
+9. Keep the response concise enough for a mobile screen.
 
 Return JSON exactly in this Android-compatible shape:
 {
-  "advancedReview": "Advanced AI Review\\n...",
-  "tailoredResumeSuggestions": "Optimized Resume Points\\n...\\n\\nMissing JD-Based Points\\n...",
-  "interviewQuestions": "Resume-Specific Interview Questions\\nQ1. ...",
-  "bulletRewriteSuggestions": "Optional Resume Point Rewrites\\n...",
-  "error": null
+"advancedReview": "...",
+"tailoredResumeSuggestions": "Add suggested skills or tools only if they are true.\n\nOptimized Resume Points\n• ...\n• ...\n\nMissing JD-Based Points\n• ...\n• ...",
+"interviewQuestions": "Q1. ...\nBased on: \"...\"\nStrong answer should mention: ...\n\nQ2. ...",
+"bulletRewriteSuggestions": "",
+"error": null
 }
 
 Job description:

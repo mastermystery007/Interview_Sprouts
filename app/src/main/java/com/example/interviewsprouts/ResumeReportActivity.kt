@@ -26,6 +26,8 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
+private const val LOCKED_TAB_MESSAGE = "Watch an ad to unlock this section."
+
 class ResumeReportActivity : AppCompatActivity() {
     private lateinit var tabOverview: TextView
     private lateinit var tabStrengths: TextView
@@ -36,6 +38,7 @@ class ResumeReportActivity : AppCompatActivity() {
     private val advancedLoadingHandler = Handler(Looper.getMainLooper())
     private var advancedLoadingRunnable: Runnable? = null
     private var advancedLoadingDotCount = 0
+    private var isFirstAdUnlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,14 +78,19 @@ class ResumeReportActivity : AppCompatActivity() {
         tabBespoke = findViewById(R.id.tabBespoke)
         textTabContent = findViewById(R.id.textTabContent)
 
-        val tabContent = mapOf(
-            tabOverview to report.overviewContent,
-            tabStrengths to report.strengthsContent,
-            tabGaps to report.gapsContent,
-            tabKeywords to report.keywordsContent,
-            tabBespoke to report.bespokeContent
-        )
-        tabContent.forEach { (tab, content) -> tab.setOnClickListener { selectTab(tab, content) } }
+        tabOverview.setOnClickListener { selectTab(tabOverview, report.overviewContent) }
+        tabStrengths.setOnClickListener {
+            selectTab(tabStrengths, if (isFirstAdUnlocked) report.strengthsContent else LOCKED_TAB_MESSAGE)
+        }
+        tabGaps.setOnClickListener {
+            selectTab(tabGaps, if (isFirstAdUnlocked) report.gapsContent else LOCKED_TAB_MESSAGE)
+        }
+        tabKeywords.setOnClickListener {
+            selectTab(tabKeywords, if (isFirstAdUnlocked) report.keywordsContent else LOCKED_TAB_MESSAGE)
+        }
+        tabBespoke.setOnClickListener {
+            selectTab(tabBespoke, if (isFirstAdUnlocked) report.bespokeContent else LOCKED_TAB_MESSAGE)
+        }
 
         val tabScrollContainer = findViewById<View>(R.id.tabScrollContainer)
         val textFullReport = findViewById<TextView>(R.id.textFullReport)
@@ -98,11 +106,8 @@ class ResumeReportActivity : AppCompatActivity() {
 
         tabScrollContainer.visibility = View.VISIBLE
         textTabContent.visibility = View.VISIBLE
-        tabOverview.visibility = View.VISIBLE
-        tabStrengths.visibility = View.GONE
-        tabGaps.visibility = View.GONE
-        tabKeywords.visibility = View.GONE
-        tabBespoke.visibility = View.GONE
+        setAllTabsVisible()
+        textFullReport.visibility = View.GONE
         selectTab(tabOverview, report.overviewContent)
 
         btnUnlockFullReport.setOnClickListener {
@@ -110,13 +115,11 @@ class ResumeReportActivity : AppCompatActivity() {
                 .setTitle("Simulated Ad")
                 .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
+                    isFirstAdUnlocked = true
                     tabScrollContainer.visibility = View.VISIBLE
                     textTabContent.visibility = View.VISIBLE
-                    tabOverview.visibility = View.VISIBLE
-                    tabStrengths.visibility = View.VISIBLE
-                    tabGaps.visibility = View.VISIBLE
-                    tabKeywords.visibility = View.VISIBLE
-                    tabBespoke.visibility = View.VISIBLE
+                    setAllTabsVisible()
+                    selectTab(tabOverview, report.overviewContent)
                     textFullReport.visibility = View.VISIBLE
                     textUnlockedPointSuggestions.visibility = View.GONE
                     textUnlockedInterviewQuestions.visibility = View.GONE
@@ -174,6 +177,12 @@ class ResumeReportActivity : AppCompatActivity() {
     override fun onDestroy() {
         stopAdvancedLoadingAnimation()
         super.onDestroy()
+    }
+
+    private fun setAllTabsVisible() {
+        listOf(tabOverview, tabStrengths, tabGaps, tabKeywords, tabBespoke).forEach { tab ->
+            tab.visibility = View.VISIBLE
+        }
     }
 
     private fun selectTab(selected: TextView, content: String) {
