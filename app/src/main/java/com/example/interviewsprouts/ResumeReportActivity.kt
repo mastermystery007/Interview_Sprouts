@@ -44,7 +44,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textReportSubtitle).text = shortenLabel(targetRole, 52)
         findViewById<TextView>(R.id.textScoreTargetRole).text = targetRole
         findViewById<TextView>(R.id.textScoreExperience).text = experienceLevel
-        findViewById<TextView>(R.id.textScoreValue).text = "Dashboard View"
+        findViewById<TextView>(R.id.textScoreValue).text = scoreRatingLabel(report.overallScore)
         findViewById<TextView>(R.id.textAlignmentLabel).text = alignmentLabel(report.overallScore)
         findViewById<TextView>(R.id.textJdChip).text = if (jdProvided) "JD Provided" else "No JD"
         findViewById<TextView>(R.id.chipTargetRole).text = shortenLabel(targetRole, 24)
@@ -74,11 +74,13 @@ class ResumeReportActivity : AppCompatActivity() {
             tabBespoke to report.bespokeContent
         )
         tabContent.forEach { (tab, content) -> tab.setOnClickListener { selectTab(tab, content) } }
-        selectTab(tabOverview, report.overviewContent)
 
+        val tabScrollContainer = findViewById<View>(R.id.tabScrollContainer)
         val textFullReport = findViewById<TextView>(R.id.textFullReport)
         val textUnlockedPointSuggestions = findViewById<TextView>(R.id.textUnlockedPointSuggestions)
         val textUnlockedInterviewQuestions = findViewById<TextView>(R.id.textUnlockedInterviewQuestions)
+        textUnlockedPointSuggestions.visibility = View.GONE
+        textUnlockedInterviewQuestions.visibility = View.GONE
         val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
         val textAdvancedLockedMessage = findViewById<TextView>(R.id.textAdvancedLockedMessage)
         val textAdvancedLlmReview = findViewById<TextView>(R.id.textAdvancedLlmReview)
@@ -90,11 +92,12 @@ class ResumeReportActivity : AppCompatActivity() {
                 .setTitle("Simulated Ad")
                 .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
-                    textUnlockedPointSuggestions.text = generateResumePointSuggestions(resumeText, targetRole)
-                    textUnlockedInterviewQuestions.text = generateInterviewQuestionsFromResume(resumeText, targetRole, experienceLevel, jobSpecification)
                     textFullReport.visibility = View.VISIBLE
-                    textUnlockedPointSuggestions.visibility = View.VISIBLE
-                    textUnlockedInterviewQuestions.visibility = View.VISIBLE
+                    tabScrollContainer.visibility = View.VISIBLE
+                    textTabContent.visibility = View.VISIBLE
+                    selectTab(tabOverview, report.overviewContent)
+                    textUnlockedPointSuggestions.visibility = View.GONE
+                    textUnlockedInterviewQuestions.visibility = View.GONE
                     textLockedReportMessage.visibility = View.GONE
                     btnUnlockFullReport.visibility = View.GONE
                     textAdvancedLockedMessage.visibility = View.VISIBLE
@@ -245,6 +248,10 @@ ${metrics.ifEmpty { listOf("No clear measurable examples detected.") }.joinToStr
         val jdKeywords = extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase())
         val combinedKeywords = (roleKeywords + jdKeywords).distinctBy { it.lowercase() }
         val resumeLower = resumeText.lowercase()
+        val foundRoleKeywords = roleKeywords.filter { resumeLower.contains(it.lowercase()) }
+        val missingRoleKeywords = roleKeywords.filterNot { resumeLower.contains(it.lowercase()) }
+        val foundJdKeywords = jdKeywords.filter { resumeLower.contains(it.lowercase()) }
+        val missingJdKeywords = jdKeywords.filterNot { resumeLower.contains(it.lowercase()) }
         val foundKeywords = combinedKeywords.filter { resumeLower.contains(it.lowercase()) }
         val missingKeywords = combinedKeywords.filterNot { resumeLower.contains(it.lowercase()) }
 
@@ -257,6 +264,10 @@ ${metrics.ifEmpty { listOf("No clear measurable examples detected.") }.joinToStr
 
         val foundText = bulletList(foundKeywords, "No matching role/JD keywords detected yet.")
         val missingText = bulletList(missingKeywords.take(12), "No major missing keyword detected from the current role/JD keyword set.")
+        val foundRoleText = bulletList(foundRoleKeywords, "No matching role keywords detected yet.")
+        val missingRoleText = bulletList(missingRoleKeywords.take(12), "No major missing role keyword detected.")
+        val foundJdText = bulletList(foundJdKeywords, "No matching JD keywords detected yet.")
+        val missingJdText = bulletList(missingJdKeywords.take(12), "No major missing JD keyword detected.")
         val actionVerbExplanation = explainActionVerbScore(actionVerbScore, resumeText)
         val measurableExplanation = explainMeasurableImpactScore(measurableImpactScore, resumeText)
         val clarityExplanation = explainSectionClarityScore(sectionClarityScore, resumeText)
@@ -267,11 +278,11 @@ Strong:
 • Resume reviewed for $targetRole at $experienceLevel level.
 • Found ${foundKeywords.size} relevant keyword(s) out of ${combinedKeywords.size} expected keyword(s).
 
-Quick category scores:
-• Keyword Match: $keywordMatchScore/100
-• Measurable Details: $measurableImpactScore/100
-• Strong Action Verbs: $actionVerbScore/100
-• Section Clarity: $sectionClarityScore/100
+Quick category signals:
+• Keyword Match: ${scoreRatingLabel(keywordMatchScore)}
+• Measurable Details: ${scoreRatingLabel(measurableImpactScore)}
+• Strong Action Verbs: ${scoreRatingLabel(actionVerbScore)}
+• Section Clarity: ${scoreRatingLabel(sectionClarityScore)}
 
 Top fixes:
 1. Add missing role/JD keywords honestly.
@@ -280,9 +291,9 @@ Top fixes:
         """.trimIndent()
 
         val missingKeywordsHook = if (missingKeywords.isEmpty()) {
-            "Keyword hook: Your resume already covers the main target keywords detected for this role/JD. Keep the wording truthful and specific."
+            "Your resume covers the main keywords detected for this role/JD."
         } else {
-            "Keyword hook: You may be missing ${missingKeywords.take(6).joinToString(", ")}. Add them only where they reflect real skills, projects, or responsibilities."
+            "Possible missing keywords: ${missingKeywords.take(3).joinToString(", ")}. Watch an ad to see the full keyword and gap analysis."
         }
 
         val overview = """
@@ -318,44 +329,49 @@ ${if (extractMetricExamples(resumeText).isEmpty()) "• Add truthful metrics suc
         """.trimIndent()
 
         val keywords = """
-Found role/JD keywords:
-$foundText
+Role Keywords Found:
+$foundRoleText
 
-Missing role/JD keywords:
-$missingText
+Role Keywords Missing:
+$missingRoleText
+
+JD Keywords Found:
+$foundJdText
+
+JD Keywords Missing:
+$missingJdText
 
 Where to add missing keywords honestly:
 ${missingKeywords.take(8).joinToString("\n") { "• $it → ${suggestWhereToAddKeyword(it)} (only if true)" }.ifBlank { "• No priority keyword placement needed from current inputs." }}
         """.trimIndent()
 
         val bespoke = if (jobSpecification.isBlank()) {
-            "Paste a job description next time for tailored suggestions."
+            "Paste a job description next time for tailored JD matching."
         } else {
-            val matched = jdKeywords.filter { resumeLower.contains(it.lowercase()) }
-            val missing = jdKeywords.filterNot { resumeLower.contains(it.lowercase()) }
             """
-JD-specific suggestions:
-• Matched JD keywords: ${matched.ifEmpty { listOf("No clear JD keyword matches detected") }.joinToString(", ")}
-• Missing or weak JD keywords: ${missing.ifEmpty { listOf("No major JD keyword gaps detected") }.joinToString(", ")}
-• Add missing JD language under Skills, Experience, Projects, or Summary only if it reflects real evidence.
+JD-specific missing points:
+${missingJdKeywords.take(10).joinToString("\n") { "• $it → add under ${suggestWhereToAddKeyword(it)} only if it is true and clearly evidenced." }.ifBlank { "• No major JD-specific keyword gaps detected." }}
+
+JD keywords already evidenced:
+${foundJdKeywords.take(10).joinToString("\n") { "• $it" }.ifBlank { "• No clear JD keyword matches detected yet." }}
             """.trimIndent()
         }
 
         val fullReport = """
 Full Heuristic Analysis
 
-Category Scores:
-• Keyword Match: $keywordMatchScore/100 — Found ${foundKeywords.size} of ${combinedKeywords.size} expected role/JD keywords.
-• Measurable Details: $measurableImpactScore/100
+Category Findings:
+• Keyword Match: ${scoreRatingLabel(keywordMatchScore)} — Found ${foundKeywords.size} of ${combinedKeywords.size} expected role/JD keywords.
+• Measurable Details: ${scoreRatingLabel(measurableImpactScore)}
 $measurableExplanation
 
-• Strong Action Verbs: $actionVerbScore/100
+• Strong Action Verbs: ${scoreRatingLabel(actionVerbScore)}
 $actionVerbExplanation
 
-• Section Clarity: $sectionClarityScore/100
+• Section Clarity: ${scoreRatingLabel(sectionClarityScore)}
 $clarityExplanation
 
-• Role Relevance: $roleRelevanceScore/100 — Based on resume evidence, keyword match, and job description alignment.
+• Role Relevance: ${scoreRatingLabel(roleRelevanceScore)} — Based on resume evidence, keyword match, and job description alignment.
 
 How to add keywords honestly:
 • Add tools under Skills only if you used them.
@@ -372,22 +388,31 @@ How to add keywords honestly:
     }
 
     private fun calculateKeywordMatchScore(foundCount: Int, totalCount: Int): Int {
-        if (totalCount == 0) return 50
+        if (totalCount == 0) return 45
         val ratio = foundCount.toDouble() / totalCount.toDouble()
-        return when {
+        val base = when {
             ratio >= 0.80 -> 92
-            ratio >= 0.65 -> 84
-            ratio >= 0.50 -> 75
-            ratio >= 0.35 -> 65
-            ratio >= 0.20 -> 52
-            ratio > 0.0 -> 40
-            else -> 25
+            ratio >= 0.65 -> 82
+            ratio >= 0.50 -> 72
+            ratio >= 0.35 -> 58
+            ratio >= 0.20 -> 45
+            ratio > 0.0 -> 32
+            else -> 20
         }
+        val cap = when {
+            foundCount <= 0 -> 20
+            foundCount <= 2 -> 35
+            foundCount == 3 -> 45
+            foundCount <= 5 -> 60
+            foundCount <= 9 -> 80
+            else -> 95
+        }
+        return minOf(base, cap).coerceIn(20, 95)
     }
 
     private fun calculateMeasurableImpactScore(resumeText: String): Int {
         val metricCount = countMetricSignals(resumeText)
-        val resultWordCount = countResultWords(resumeText)
+        val resultWordCount = countResultWords(stripContactNoise(resumeText))
         var score = 25
         score += (metricCount * 8).coerceAtMost(48)
         score += (resultWordCount * 5).coerceAtMost(22)
@@ -463,8 +488,37 @@ ${formatExamples(missing, "No major missing section detected.")}
     }
 
     private fun extractMetricExamples(resumeText: String): List<String> {
-        val regex = Regex("""(%|\b\d+[\w%+,.]*\b|users?|customers?|clients?|hours?|days?|weeks?|months?|revenue|cost|budget|sales|leads|accuracy|performance|latency|ctr|cpc|cpa|roas|roi|improved|reduced|increased|saved|optimized)""", RegexOption.IGNORE_CASE)
-        return resumeLines(resumeText).filter { regex.containsMatchIn(it) }.map { shortenLabel(it, 150) }.distinct().take(5)
+        return resumeLines(stripContactNoise(resumeText))
+            .filter { hasMeasurableImpactSignal(it) }
+            .map { shortenLabel(it, 150) }
+            .distinct()
+            .take(5)
+    }
+
+    private fun stripContactNoise(text: String): String {
+        return text
+            .replace(Regex("""\b[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}\b"""), " ")
+            .replace(Regex("""https?://\S+|www\.\S+""", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("""\b(?:linkedin|github)\.com/\S+""", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("""(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)"""), " ")
+            .replace(Regex("""\b\d{7,}\b"""), " ")
+    }
+
+    private fun hasMeasurableImpactSignal(line: String): Boolean {
+        val cleaned = stripContactNoise(line).replace(Regex("""\b20(?:1\d|2[0-6])\b"""), " ")
+        val lower = cleaned.lowercase()
+        val hasNumber = Regex("""\b\d+(?:[.,]\d+)?\+?\b""").containsMatchIn(lower)
+        val hasPercentage = Regex("""\b\d+(?:[.,]\d+)?\s*%""").containsMatchIn(lower)
+        val hasCurrency = Regex("""[$₹€£]\s*\d|\b\d+(?:[.,]\d+)?\s*(?:usd|inr|eur|gbp|dollars?|rupees?)\b""", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
+        val impactUnits = listOf(
+            "users", "user", "customers", "customer", "clients", "client", "hours", "hour", "days", "day", "weeks", "week", "months", "month",
+            "leads", "lead", "sales", "projects", "project", "reports", "report", "dashboards", "dashboard", "revenue", "cost", "budget"
+        )
+        val impactWords = listOf("improved", "reduced", "increased", "saved", "optimized", "accelerated", "streamlined", "delivered", "resolved")
+        val unitPattern = impactUnits.joinToString("|")
+        val hasImpactUnitNearNumber = Regex("""\b\d+(?:[.,]\d+)?\+?\s*(?:$unitPattern)\b|\b(?:$unitPattern)\b\W{0,24}\b\d+(?:[.,]\d+)?\+?\b""", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
+        val hasNumberAndImpactWord = hasNumber && impactWords.any { lower.contains(it) }
+        return hasPercentage || hasCurrency || hasImpactUnitNearNumber || hasNumberAndImpactWord
     }
 
     private fun extractActionVerbExamples(resumeText: String): List<String> {
@@ -531,7 +585,7 @@ ${formatExamples(missing, "No major missing section detected.")}
         return listOf("Education", "Experience", "Skills", "Projects").filter { it !in detected }
     }
 
-    private fun countMetricSignals(text: String): Int = Regex("""(\d+%|\d+\+?|\$|₹|€|£|users|customers|clients|hours|days|weeks|months|revenue|cost|accuracy|performance|latency|ctr|cpc|cpa|roas|roi|sales|growth|budget|leads)""", RegexOption.IGNORE_CASE).findAll(text).count()
+    private fun countMetricSignals(text: String): Int = resumeLines(stripContactNoise(text)).count { hasMeasurableImpactSignal(it) }
 
     private fun countResultWords(text: String): Int {
         val lower = text.lowercase()
@@ -581,7 +635,34 @@ ${formatExamples(missing, "No major missing section detected.")}
     private fun extractSimpleKeywordsFromJobSpec(jobSpecLower: String): List<String> {
         if (jobSpecLower.isBlank()) return emptyList()
         val possibleKeywords = listOf("sql", "excel", "python", "power bi", "tableau", "google analytics", "seo", "sem", "google ads", "meta ads", "stakeholder management", "requirements gathering", "user stories", "uat", "jira", "agile", "scrum", "rest api", "git", "kotlin", "java", "campaign management", "lead generation", "a/b testing", "conversion rate", "ctr", "cpc", "cpa", "roas", "financial modeling", "forecasting", "budgeting", "dashboard", "reporting", "market research", "product roadmap", "communication", "project management", "crm", "sales pipeline", "cold calling", "client relationship management", "recruitment", "talent acquisition", "onboarding", "figma", "wireframing", "prototyping", "usability testing", "process improvement", "operations management", "workflow optimization", "supply chain", "vendor management", "risk management")
-        return possibleKeywords.filter { jobSpecLower.contains(it) }
+        val normalized = jobSpecLower.replace(Regex("""[^a-z0-9+/\s.-]"""), " ").replace(Regex("""\s+"""), " ").trim()
+        val knownKeywords = possibleKeywords.filter { normalized.contains(it) }
+        val stopwords = setOf(
+            "the", "and", "or", "with", "for", "from", "this", "that", "role", "candidate", "experience", "years", "year", "team", "work", "ability", "strong", "good", "excellent", "required", "preferred", "plus", "etc",
+            "must", "have", "will", "you", "our", "your", "about", "across", "responsibilities", "responsibility", "requirements", "requirement", "skills", "skill", "knowledge", "looking", "seeking", "join", "company", "business",
+            "manage", "support", "using", "hands", "proven", "nice", "bonus", "degree", "bachelor", "master", "field", "related", "environment", "fast", "paced", "written", "verbal", "highly", "detail", "oriented"
+        )
+        val technicalNouns = setOf(
+            "api", "apis", "sql", "python", "java", "kotlin", "javascript", "typescript", "react", "node", "android", "aws", "azure", "gcp", "tableau", "figma", "jira", "agile", "scrum", "analytics", "dashboard", "dashboards", "database", "databases", "crm", "seo", "sem", "excel", "power", "bi", "testing", "automation", "forecasting", "budgeting", "reporting", "research", "roadmap", "pipeline", "recruitment", "onboarding", "prototype", "prototyping"
+        )
+        fun isUsefulToken(token: String): Boolean {
+            return token.length >= 3 && token.none { it.isDigit() } && token !in stopwords
+        }
+        val tokens = normalized.split(Regex("""\s+""")).map { it.trim('.', '-', '/') }.filter(::isUsefulToken)
+        val wordKeywords = tokens.groupingBy { it }.eachCount()
+            .toList()
+            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenByDescending { if (it.first in technicalNouns || it.first.removeSuffix("s") in technicalNouns) 1 else 0 }.thenBy { it.first })
+            .map { it.first }
+            .take(8)
+        val phraseKeywords = tokens.zipWithNext()
+            .map { (first, second) -> "$first $second" }
+            .filterNot { phrase -> knownKeywords.any { it.equals(phrase, ignoreCase = true) } }
+            .groupingBy { it }.eachCount()
+            .toList()
+            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenByDescending { phrase -> if (phrase.first.split(" ").any { it in technicalNouns || it.removeSuffix("s") in technicalNouns }) 1 else 0 }.thenBy { it.first })
+            .map { it.first }
+            .take(7)
+        return (knownKeywords + phraseKeywords + wordKeywords).distinctBy { it.lowercase() }.take(25)
     }
 
     private fun suggestWhereToAddKeyword(keyword: String): String {
@@ -613,11 +694,18 @@ ${formatExamples(missing, "No major missing section detected.")}
     private fun bulletList(items: List<String>, emptyText: String): String = if (items.isEmpty()) "• $emptyText" else items.joinToString("\n") { "• $it" }
     private fun formatExamples(items: List<String>, emptyText: String): String = if (items.isEmpty()) "• $emptyText" else items.joinToString("\n") { "• $it" }
     private fun shortenLabel(value: String, maxLength: Int): String = if (value.length <= maxLength) value else value.take(maxLength - 1).trimEnd() + "…"
+    private fun scoreRatingLabel(score: Int): String = when {
+        score >= 85 -> "Excellent"
+        score >= 70 -> "Good"
+        score >= 50 -> "Needs Improvement"
+        else -> "Lacking"
+    }
+
     private fun alignmentLabel(score: Int): String = when {
-        score >= 80 -> "Strong Alignment"
-        score >= 60 -> "Good Alignment"
-        score >= 40 -> "Moderate Alignment"
-        else -> "Needs Work"
+        score >= 85 -> "Strong role fit"
+        score >= 70 -> "Good role fit"
+        score >= 50 -> "Moderate role fit"
+        else -> "Low role fit"
     }
 
     private val strongActionVerbs = listOf(

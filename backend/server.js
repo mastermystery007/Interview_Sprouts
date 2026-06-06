@@ -114,7 +114,7 @@ Job description provided: ${jobSpecification ? 'yes' : 'no'}
 Return a concise mobile-friendly JSON answer with these sections:
 
 1. advancedReview
-- Section label: Advanced Review
+- Section label: Advanced AI Review
 - Concise fit assessment.
 - Strong evidence from resume.
 - Weak or missing evidence.
@@ -123,6 +123,7 @@ Return a concise mobile-friendly JSON answer with these sections:
 2. tailoredResumeSuggestions
 - Include the labels: Optimized Resume Points and Missing JD-Based Points.
 - Optimized Resume Points: 5-8 optimized points the user can add or improve, based only on existing resume evidence.
+- Focus on truthful clarity, role alignment, responsibilities, tools already evidenced, and concrete outcomes already evidenced; do not focus on metric bullet versions.
 - Do not invent experience.
 - If suggesting a skill/tool not in resume, phrase it as: "Add this only if true" or "Build a small project before adding this."
 - Missing JD-Based Points when job description is present: matched JD keywords with resume evidence, missing JD keywords or weak evidence, where to add them (Skills / Experience / Projects / Summary), and always include "only if true".
@@ -148,8 +149,8 @@ Return a concise mobile-friendly JSON answer with these sections:
 
 Rules:
 1. Do not say skills are "implicit", "likely", or "assumed".
-2. If a JD skill is missing, say it is missing/not clearly evidenced.
-3. Do not invent tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
+2. If a JD skill is missing, say it is missing/not clearly evidenced and should be added only if true.
+3. Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
 4. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless resume explicitly supports it.
 5. Do not invent exact metrics.
 6. Use placeholders only if needed: [X%], [number], [hours], [amount].
@@ -158,7 +159,7 @@ Rules:
 
 Return JSON exactly in this Android-compatible shape:
 {
-  "advancedReview": "Advanced Review\\n...",
+  "advancedReview": "Advanced AI Review\\n...",
   "tailoredResumeSuggestions": "Optimized Resume Points\\n...\\n\\nMissing JD-Based Points\\n...",
   "interviewQuestions": "Resume-Specific Interview Questions\\nQ1. ...",
   "bulletRewriteSuggestions": "Optional Resume Point Rewrites\\n...",
