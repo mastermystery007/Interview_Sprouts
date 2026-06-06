@@ -1,9 +1,9 @@
 package com.example.interviewsprouts.network
 
 data class ResumeAiResponse(
-    val advancedReview: String = "",
-    val tailoredResumeSuggestions: String = "",
-    val interviewQuestions: String = "",
-    val bulletRewriteSuggestions: String = "",
+    val advancedReview: String? = null,
+    val tailoredResumeSuggestions: String? = null,
+    val interviewQuestions: String? = null,
+    val bulletRewriteSuggestions: String? = null,
     val error: String? = null
 )

@@ -70,7 +70,7 @@ app.post('/api/analyze-resume', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a resume review assistant. Return only valid JSON with exactly these keys: advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences. Do not include text outside JSON.'
+            content: 'You are a resume review assistant. Return only valid JSON with exactly these keys: advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences. Do not include text outside JSON. Strictly obey all count limits. The final visible report must contain at most 12 content items total. Use null instead of blank strings.'
           },
           {
             role: 'user',
@@ -87,15 +87,15 @@ app.post('/api/analyze-resume', async (req, res) => {
 
     const data = await aiResponse.json();
     const content = data?.choices?.[0]?.message?.content;
-    const parsed = parseJsonContent(content);
+    const parsed = parseJsonContent(content) || {};
 
     return res.json({
-      advancedReview: toReadableString(parsed.advancedReview),
-      tailoredResumeSuggestions: toReadableString(
+      advancedReview: nullableReadableString(parsed.advancedReview),
+      tailoredResumeSuggestions: nullableReadableString(
         parsed.tailoredResumeSuggestions || combineOptimizedAndMissing(parsed)
       ),
-      interviewQuestions: toReadableString(parsed.interviewQuestions),
-      bulletRewriteSuggestions: toReadableString(parsed.bulletRewriteSuggestions),
+      interviewQuestions: nullableReadableString(parsed.interviewQuestions),
+      bulletRewriteSuggestions: nullableReadableString(parsed.bulletRewriteSuggestions),
       error: parsed.error || null
     });
   } catch (error) {
@@ -113,100 +113,38 @@ Job description provided: ${jobSpecification ? 'yes' : 'no'}
 
 Return a concise mobile-friendly JSON answer.
 
-Content limits:
+Required output limits:
 
-* advancedReview: maximum 4 bullets.
-* tailoredResumeSuggestions: exactly 4 bullets total.
-* interviewQuestions: exactly 4 questions.
-* bulletRewriteSuggestions: return an empty string unless there is a very clear rewrite opportunity.
-* Avoid long paragraphs.
-* Do not repeat the same warning after every bullet.
+* advancedReview: exactly 4 short bullets maximum.
+* tailoredResumeSuggestions: exactly 4 bullets total maximum, across Optimized Resume Points and Missing JD-Based Points combined.
+* interviewQuestions: exactly 4 questions maximum.
+* Each question must contain only:
+  Q1. [question]
+  Strong answer should mention: [one short sentence or two short phrases]
+* Do not include “Based on”, “Why this may be asked”, “Follow-up probe”, or long explanations.
+* bulletRewriteSuggestions: return null unless there is a very clear rewrite opportunity, but Android will not display this section.
+* Total visible content items must be no more than 12:
+  4 advanced review bullets + 4 suggestion bullets + 4 question blocks.
 
-1. advancedReview
+Use this JSON shape:
 
-Give a concise fit assessment using only resume evidence.
-
-Include:
-
-* 1 bullet on overall fit.
-* 1–2 bullets on strongest evidence.
-* 1–2 bullets on weak or missing evidence.
-
-Do not invent assumptions. Do not say a skill is present unless it is clearly evidenced.
-
-2. tailoredResumeSuggestions
-
-Return exactly 4 bullets total.
-
-Start this section with this sentence once:
-"Add suggested skills or tools only if they are true."
-
-Then include:
-
-* 2 bullets under "Optimized Resume Points" based on existing resume evidence.
-* 2 bullets under "Missing JD-Based Points" if a job description is provided.
-* If no job description is provided, use those 2 bullets for role-relevant missing points.
-
-Rules for this section:
-
-* Focus on clarity, role alignment, responsibilities, tools already evidenced, and concrete outcomes already evidenced.
-* Do not invent experience, tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
-* If a JD skill is missing, say it is "not clearly evidenced".
-* If suggesting a missing technical skill, say: "Add this only if true, or build a small project before adding it."
-* For non-technical skills, do not say "build a small project"; instead say where it could be evidenced, such as Skills, Experience, Projects, or Summary.
-* Do not append "only if true" to every bullet.
-* Do not focus mainly on metric rewrites.
-
-3. interviewQuestions
-
-Generate exactly 4 focused questions.
-
-Every question must reference:
-
-* an actual resume excerpt, OR
-* a detected skill/tool/project, OR
-* measurable evidence, OR
-* a JD requirement.
-
-Do not ask generic questions such as:
-
-* Tell me about yourself.
-* Why this role?
-* What are your strengths/weaknesses?
-* What would you do in the first 30 days?
-* Tell me about a conflict/teamwork situation, unless it directly references a resume item.
-* Describe feedback you received, unless it directly references a resume item.
-
-Use this compact format:
-
-Q1. [question]
-Based on: "[resume/JD evidence]"
-Strong answer should mention: [2 short points]
-
-4. bulletRewriteSuggestions
-
-Return an empty string unless there is a very clear rewrite opportunity. If used, maximum 2 bullets.
+{
+"advancedReview": "• ...\n• ...\n• ...\n• ...",
+"tailoredResumeSuggestions": "Optimized Resume Points\n• ...\n• ...\n\nMissing JD-Based Points\n• ...\n• ...",
+"interviewQuestions": "Q1. ...\nStrong answer should mention: ...\n\nQ2. ...\nStrong answer should mention: ...\n\nQ3. ...\nStrong answer should mention: ...\n\nQ4. ...\nStrong answer should mention: ...",
+"bulletRewriteSuggestions": null,
+"error": null
+}
 
 Rules:
 
-1. Use only evidence present in the resume and job description.
-2. Do not say skills are "implicit", "likely", "assumed", or "probably present".
-3. If a JD skill is missing, say it is missing or not clearly evidenced.
-4. Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
-5. Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless the resume explicitly supports it.
-6. Do not invent exact metrics.
-7. Use placeholders only if needed: [X%], [number], [hours], [amount].
-8. Return valid JSON only.
-9. Keep the response concise enough for a mobile screen.
-
-Return JSON exactly in this Android-compatible shape:
-{
-"advancedReview": "...",
-"tailoredResumeSuggestions": "Add suggested skills or tools only if they are true.\n\nOptimized Resume Points\n• ...\n• ...\n\nMissing JD-Based Points\n• ...\n• ...",
-"interviewQuestions": "Q1. ...\nBased on: \"...\"\nStrong answer should mention: ...\n\nQ2. ...",
-"bulletRewriteSuggestions": "",
-"error": null
-}
+* Use only evidence present in the resume and job description.
+* Do not invent tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
+* If a JD skill is missing, say it is not clearly evidenced.
+* Do not repeat “only if true” after every bullet.
+* Do not use “AI-driven”, “LLM-powered”, “machine learning”, or “automated” unless resume explicitly supports it.
+* Use placeholders only if needed: [X%], [number], [hours], [amount].
+* Return valid JSON only.
 
 Job description:
 ${jobSpecification || 'Not provided'}
@@ -214,7 +152,6 @@ ${jobSpecification || 'Not provided'}
 Resume text:
 ${resumeText}`;
 }
-
 function parseJsonContent(content) {
   if (!content || typeof content !== 'string') {
     return emptyResponse('No AI content returned.');
@@ -225,9 +162,9 @@ function parseJsonContent(content) {
   } catch (_error) {
     return {
       advancedReview: content,
-      tailoredResumeSuggestions: '',
-      interviewQuestions: '',
-      bulletRewriteSuggestions: '',
+      tailoredResumeSuggestions: null,
+      interviewQuestions: null,
+      bulletRewriteSuggestions: null,
       error: null
     };
   }
@@ -240,6 +177,11 @@ function combineOptimizedAndMissing(parsed) {
     optimized ? `Optimized Resume Points\n${optimized}` : '',
     missing ? `Missing JD-Based Points\n${missing}` : ''
   ].filter(Boolean).join('\n\n');
+}
+
+function nullableReadableString(value) {
+  const text = toReadableString(value);
+  return text && text.trim() ? text.trim() : null;
 }
 
 function toReadableString(value) {
@@ -282,10 +224,10 @@ function stripCodeFences(value) {
 
 function emptyResponse(error) {
   return {
-    advancedReview: '',
-    tailoredResumeSuggestions: '',
-    interviewQuestions: '',
-    bulletRewriteSuggestions: '',
+    advancedReview: null,
+    tailoredResumeSuggestions: null,
+    interviewQuestions: null,
+    bulletRewriteSuggestions: null,
     error
   };
 }

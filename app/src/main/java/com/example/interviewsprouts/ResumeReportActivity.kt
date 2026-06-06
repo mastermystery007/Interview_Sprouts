@@ -225,7 +225,7 @@ class ResumeReportActivity : AppCompatActivity() {
                 stopAdvancedLoadingAnimation()
                 textAdvancedLlmReview.text = applyReportFormatting(
                     if (response.isSuccessful && body != null && body.error.isNullOrBlank()) {
-                        formatBackendAdvancedReview(body)
+                        formatBackendAdvancedReview(body, buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification))
                     } else {
                         buildOfflineAdvancedFallback(resumeText, targetRole, experienceLevel, jobSpecification)
                     }
@@ -239,37 +239,162 @@ class ResumeReportActivity : AppCompatActivity() {
         })
     }
 
-    private fun formatBackendAdvancedReview(response: ResumeAiResponse): String {
+    private fun formatBackendAdvancedReview(response: ResumeAiResponse, offlineFallback: String): String {
         val sections = mutableListOf<String>()
-        response.advancedReview.takeIf { it.isNotBlank() }?.let {
-            sections.add(formatSection("Advanced AI Review", it, "Advanced AI Review", "Advanced Review"))
+        val advancedReview = compactAdvancedReview(response.advancedReview)
+        val suggestions = compactSuggestions(response.tailoredResumeSuggestions)
+        val questions = compactQuestions(response.interviewQuestions)
+
+        if (advancedReview.isNotBlank()) {
+            sections.add("Advanced AI Review\n$advancedReview")
         }
-        response.tailoredResumeSuggestions.takeIf { it.isNotBlank() }?.let {
-            sections.add(
-                formatSection(
-                    "Optimized Resume Points + Missing JD-Based Points",
-                    it,
-                    "Optimized Resume Points",
-                    "Missing JD-Based Points",
-                    "Optimized Resume Points + Missing JD-Based Points"
-                )
-            )
+        if (suggestions.isNotBlank()) {
+            sections.add("Optimized Resume Points + Missing JD-Based Points\n$suggestions")
         }
-        response.interviewQuestions.takeIf { it.isNotBlank() }?.let {
-            sections.add(formatSection("Resume-Specific Interview Questions", it, "Resume-Specific Interview Questions", "Interview Questions"))
+        if (questions.isNotBlank()) {
+            sections.add("Resume-Specific Interview Questions\n$questions")
         }
-        response.bulletRewriteSuggestions.takeIf { it.isNotBlank() }?.let {
-            sections.add(formatSection("Optional Resume Point Rewrites", it, "Optional Resume Point Rewrites", "Optional Resume Point Rewrites / cleanup notes"))
+
+        return sections.joinToString("\n\n").ifBlank {
+            "AI backend returned no usable content. Showing offline fallback.\n\n${offlineFallback.substringAfter("\n\n", offlineFallback)}"
         }
-        return sections.joinToString("\n\n").ifBlank { "AI backend returned no usable content. Showing offline fallback is recommended." }
     }
 
-    private fun formatSection(sectionHeading: String, content: String, vararg duplicateHeadings: String): String {
-        val cleaned = stripLeadingHeading(content, *duplicateHeadings)
-        return "$sectionHeading\n$cleaned"
+    private fun compactAdvancedReview(text: String?): String {
+        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review", "Advanced Review")
+        if (cleaned.isBlank() || cleaned.equals("null", ignoreCase = true)) return ""
+
+        val lines = cleaned.lines()
+            .map { normalizeVisibleLine(it) }
+            .filter { it.isNotBlank() && !isRemovedAdvancedLine(it) }
+
+        val bulletTexts = lines.mapNotNull { line ->
+            val withoutBullet = line.removePrefix("•").trim()
+            when {
+                withoutBullet.isBlank() -> null
+                looksLikeStandaloneHeading(withoutBullet) -> null
+                line.startsWith("•") || line.matches(Regex("^[-*]\\s+.+")) || line.matches(Regex("^\\d+[.)]\\s+.+")) -> withoutBullet
+                else -> null
+            }
+        }.ifEmpty {
+            splitParagraphIntoSentences(cleaned)
+        }
+
+        return bulletTexts
+            .map { it.trim().trimStart('-', '*', '•').replace(Regex("^\\d+[.)]\\s*"), "").trim() }
+            .filter { it.isNotBlank() && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
+            .take(4)
+            .joinToString("\n") { "• $it" }
     }
 
-    private fun stripLeadingHeading(text: String, vararg headings: String): String {
+    private fun compactSuggestions(text: String?): String {
+        val cleaned = stripDuplicateSectionHeading(
+            text.orEmpty(),
+            "Optimized Resume Points + Missing JD-Based Points",
+            "Tailored Resume Suggestions",
+            "Add suggested skills or tools only if they are true."
+        )
+        if (cleaned.isBlank() || cleaned.equals("null", ignoreCase = true)) return ""
+
+        val optimized = mutableListOf<String>()
+        val missing = mutableListOf<String>()
+        val general = mutableListOf<String>()
+        var currentSection = "general"
+
+        cleaned.lines().forEach { rawLine ->
+            val line = normalizeVisibleLine(rawLine)
+            if (line.isBlank() || isRemovedAdvancedLine(line)) return@forEach
+            when {
+                isSectionHeadingLine(line, "Optimized Resume Points") -> currentSection = "optimized"
+                isSectionHeadingLine(line, "Missing JD-Based Points") -> currentSection = "missing"
+                looksLikeStandaloneHeading(line) -> Unit
+                else -> {
+                    val bullet = line.trim().trimStart('•', '-', '*').replace(Regex("^\\d+[.)]\\s*"), "").trim()
+                    if (bullet.isNotBlank()) {
+                        when (currentSection) {
+                            "optimized" -> optimized.add(bullet)
+                            "missing" -> missing.add(bullet)
+                            else -> general.add(bullet)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (optimized.isEmpty() && missing.isEmpty() && general.isEmpty()) {
+            general.addAll(splitParagraphIntoSentences(cleaned))
+        }
+
+        val selectedOptimized: List<String>
+        val selectedMissing: List<String>
+        val selectedGeneral: List<String>
+        if (optimized.isNotEmpty() && missing.isNotEmpty()) {
+            selectedOptimized = optimized.take(2)
+            selectedMissing = missing.take(4 - selectedOptimized.size).take(2)
+            val remaining = 4 - selectedOptimized.size - selectedMissing.size
+            selectedGeneral = if (remaining > 0) (optimized.drop(selectedOptimized.size) + missing.drop(selectedMissing.size) + general).take(remaining) else emptyList()
+        } else {
+            selectedOptimized = optimized.take(4)
+            selectedMissing = missing.take(4 - selectedOptimized.size)
+            selectedGeneral = general.take(4 - selectedOptimized.size - selectedMissing.size)
+        }
+
+        val parts = mutableListOf<String>()
+        if (selectedOptimized.isNotEmpty()) {
+            parts.add("Optimized Resume Points\n" + selectedOptimized.joinToString("\n") { "• $it" })
+        }
+        if (selectedMissing.isNotEmpty()) {
+            parts.add("Missing JD-Based Points\n" + selectedMissing.joinToString("\n") { "• $it" })
+        }
+        if (parts.isEmpty() && selectedGeneral.isNotEmpty()) {
+            parts.add(selectedGeneral.joinToString("\n") { "• $it" })
+        }
+        return removeBlankLines(parts.joinToString("\n"))
+    }
+
+    private fun compactQuestions(text: String?): String {
+        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Resume-Specific Interview Questions", "Interview Questions")
+        if (cleaned.isBlank() || cleaned.equals("null", ignoreCase = true)) return ""
+
+        val blocks = Regex("(?im)(?=^(?:Q\\d+\\.|\\d+[.)])\\s+)")
+            .split(cleaned)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .ifEmpty { cleaned.lines().filter { it.trim().endsWith("?") } }
+
+        val formattedBlocks = blocks.mapNotNull { block ->
+            val keptLines = block.lines()
+                .map { normalizeVisibleLine(it) }
+                .filter { it.isNotBlank() && !isRemovedQuestionLine(it) }
+            val questionLine = keptLines.firstOrNull { line ->
+                line.matches(Regex("^(?:Q\\d+\\.|\\d+[.)])\\s+.+", RegexOption.IGNORE_CASE)) || line.endsWith("?")
+            } ?: return@mapNotNull null
+            val question = questionLine
+                .replace(Regex("^(?:Q\\d+\\.|\\d+[.)])\\s*", RegexOption.IGNORE_CASE), "")
+                .trim()
+                .trimStart('-', '*', '•')
+                .trim()
+            if (question.isBlank()) return@mapNotNull null
+            val strongAnswer = keptLines.firstOrNull { it.startsWith("Strong answer should mention:", ignoreCase = true) }
+                ?.substringAfter(":")
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?: "concrete resume evidence and a verified outcome."
+            question to strongAnswer
+        }.take(4)
+
+        return formattedBlocks.mapIndexed { index, (question, strongAnswer) ->
+            "Q${index + 1}. $question\nStrong answer should mention: $strongAnswer"
+        }.joinToString("\n\n")
+    }
+
+    private fun removeBlankLines(text: String): String = text.lines()
+        .map { it.trimEnd() }
+        .filter { it.isNotBlank() }
+        .joinToString("\n")
+        .trim()
+
+    private fun stripDuplicateSectionHeading(text: String, vararg headings: String): String {
         var cleaned = text.trim()
         headings.forEach { heading ->
             val pattern = Regex("^" + Regex.escape(heading) + "\\s*[:：-]?\\s*", RegexOption.IGNORE_CASE)
@@ -277,6 +402,42 @@ class ResumeReportActivity : AppCompatActivity() {
         }
         return cleaned.trim()
     }
+
+    private fun normalizeVisibleLine(line: String): String = line.trim().replace(Regex("\\s+"), " ")
+
+    private fun isRemovedAdvancedLine(line: String): Boolean = isRemovedQuestionLine(line) ||
+        isSectionHeadingLine(line, "Metric Evidence Detected") ||
+        line.startsWith("Honesty reminder", ignoreCase = true) ||
+        line.startsWith("Add suggested skills or tools only if they are true", ignoreCase = true)
+
+    private fun isRemovedQuestionLine(line: String): Boolean =
+        line.startsWith("Based on:", ignoreCase = true) ||
+            line.startsWith("Why this may be asked:", ignoreCase = true) ||
+            line.startsWith("Follow-up probe:", ignoreCase = true) ||
+            line.startsWith("Follow up probe:", ignoreCase = true)
+
+    private fun looksLikeStandaloneHeading(line: String): Boolean = listOf(
+        "Advanced AI Review",
+        "Advanced Review",
+        "Metric Evidence Detected",
+        "Optimized Resume Points",
+        "Missing JD-Based Points",
+        "Optimized Resume Points + Missing JD-Based Points",
+        "Resume-Specific Interview Questions",
+        "Interview Questions",
+        "Optional Resume Point Rewrites",
+        "Optional Resume Point Rewrites / cleanup notes",
+        "Tailored Resume Suggestions"
+    ).any { isSectionHeadingLine(line, it) }
+
+    private fun isSectionHeadingLine(line: String, heading: String): Boolean =
+        line.trim().trimEnd(':', '：', '-', '–').trim().equals(heading, ignoreCase = true)
+
+    private fun splitParagraphIntoSentences(text: String): List<String> = text
+        .replace("\n", " ")
+        .split(Regex("(?<=[.!?])\\s+"))
+        .map { it.trim().trimStart('-', '*', '•').replace(Regex("^\\d+[.)]\\s*"), "").trim() }
+        .filter { it.isNotBlank() && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
 
     private fun applyReportFormatting(text: String): CharSequence {
         val builder = SpannableStringBuilder(text)
@@ -334,51 +495,49 @@ class ResumeReportActivity : AppCompatActivity() {
         val resumeLower = resumeText.lowercase()
         val matchedJd = jdKeywords.filter { resumeLower.contains(it.lowercase()) }
         val missingJd = jdKeywords.filterNot { resumeLower.contains(it.lowercase()) }
-        val optimized = if (bullets.isEmpty()) {
-            "• Add 3–5 role-relevant resume points based on real coursework, internships, projects, tools, or responsibilities."
+
+        val metricSummary = metrics.firstOrNull()?.let { "Measurable evidence: ${shortenLabel(it, 110)}" }
+            ?: "Measurable evidence: no clear metrics detected; add numbers only where verifiable."
+        val advanced = listOf(
+            "Target role: $targetRole ($experienceLevel).",
+            "Strong evidence: ${bullets.take(2).joinToString("; ").ifBlank { "Add clearer role evidence from your resume." }}",
+            "Weak or missing evidence: ${missingJd.take(3).joinToString(", ").ifBlank { "No major JD-specific weakness detected from available text." }}",
+            metricSummary
+        ).joinToString("\n") { "• $it" }
+
+        val optimizedBullets = if (bullets.isEmpty()) {
+            listOf("Add role-relevant resume points based on real coursework, internships, projects, tools, or responsibilities.")
         } else {
-            bullets.joinToString("\n") { bullet ->
-                "• ${buildOptimizedBulletSuggestion(bullet, roleAndJdKeywords)}"
+            bullets.take(2).map { bullet -> buildOptimizedBulletSuggestion(bullet, roleAndJdKeywords) }
+        }
+        val missingBullets = if (jobSpecification.isBlank()) {
+            listOf("Paste a job description to identify JD-based points not clearly evidenced.")
+        } else {
+            listOf(
+                "Matched JD evidence: ${matchedJd.take(4).ifEmpty { listOf("No clear matches detected") }.joinToString(", ")}.",
+                "Not clearly evidenced: ${missingJd.take(4).ifEmpty { listOf("No major JD gaps detected") }.joinToString(", ")}."
+            )
+        }
+        val suggestions = buildString {
+            if (optimizedBullets.isNotEmpty()) {
+                appendLine("Optimized Resume Points")
+                optimizedBullets.take(2).forEach { appendLine("• $it") }
             }
-        }
-        val metricEvidence = metrics.ifEmpty {
-            listOf("No clear measurable examples detected. Add numbers only where you can verify them.")
-        }.joinToString("\n") { "• $it" }
-        val missingText = if (jobSpecification.isBlank()) {
-            "JD-specific suggestions require a pasted job description."
-        } else {
-            "Matched JD keywords with evidence: ${matchedJd.ifEmpty { listOf("No clear matches detected") }.joinToString(", ")}\n" +
-                "Missing or weak JD evidence: ${missingJd.ifEmpty { listOf("No major JD gaps detected") }.joinToString(", ")}\n" +
-                "Where to add them honestly: Skills / Experience / Projects / Summary — only if true."
-        }
-        val cleanupNotes = if (bullets.isEmpty()) {
-            "• Add clearer resume bullets before requesting rewrite-style cleanup."
-        } else {
-            findWeakBullets(resumeText).take(3).joinToString("\n") { "• Clean up this weak or generic point only with true evidence: \"${shortenLabel(it, 120)}\"" }
-                .ifBlank { "• Cleanup note: keep bullets concise, specific, and evidence-based." }
-        }
+            if (missingBullets.isNotEmpty()) {
+                appendLine("Missing JD-Based Points")
+                missingBullets.take(4 - optimizedBullets.take(2).size).forEach { appendLine("• $it") }
+            }
+        }.trim()
+
         return """
 Advanced AI Review
-• Target role: $targetRole ($experienceLevel).
-• Strong evidence: ${bullets.take(2).joinToString("; ").ifBlank { "Add clearer role evidence from your resume." }}
-• Weak or missing evidence: ${missingJd.take(4).joinToString(", ").ifBlank { "No major JD-specific weakness detected from available text." }}
+${compactAdvancedReview(advanced)}
 
-Metric Evidence Detected
-$metricEvidence
-
-Optimized Resume Points
-$optimized
-
-Honesty reminder: only add tools, skills, metrics, and responsibilities that are true.
-
-Missing JD-Based Points
-$missingText
+Optimized Resume Points + Missing JD-Based Points
+${compactSuggestions(suggestions)}
 
 Resume-Specific Interview Questions
-${generateInterviewQuestionsFromResume(resumeText, targetRole, experienceLevel, jobSpecification)}
-
-Optional Resume Point Rewrites / cleanup notes
-$cleanupNotes
+${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, experienceLevel, jobSpecification))}
         """.trimIndent()
     }
 
@@ -718,7 +877,7 @@ ${formatExamples(missing, "No major missing section detected.")}
 
         val uniqueSignals = signals.map { shortenLabel(it, 120) }.filter { it.isNotBlank() }.distinct().take(4)
         if (uniqueSignals.isEmpty()) {
-            return "Resume-Specific Interview Questions\n• Add more detailed resume lines so questions can reference real projects, skills, tools, or achievements."
+            return "Q1. What real project, skill, or achievement best supports your fit for $targetRole?\nStrong answer should mention: concrete resume evidence and a verifiable result."
         }
 
         return uniqueSignals.take(4).mapIndexed { index, signal ->
@@ -728,7 +887,7 @@ ${formatExamples(missing, "No major missing section detected.")}
                 Regex("[%0-9]").containsMatchIn(signal) -> "the measurable result and how it was achieved"
                 else -> "the work behind this resume line"
             }
-            "Q${index + 1}. Your resume mentions \"$signal\". Can you explain $focus, your exact role, and what outcome you can verify?"
+            "Q${index + 1}. Your resume mentions \"$signal\". Can you explain $focus, your exact role, and what outcome you can verify?\nStrong answer should mention: specific resume evidence and a verifiable result."
         }.joinToString("\n\n")
     }
 
