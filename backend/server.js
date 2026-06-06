@@ -70,7 +70,7 @@ app.post('/api/analyze-resume', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: 'You are a resume review assistant. Return only valid JSON with exactly these keys: advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences. Do not include text outside JSON. Strictly obey all count limits. The final visible report must contain at most 12 content items total. Use null instead of blank strings.'
+            content: 'You are a resume review assistant. Return only valid JSON with exactly these keys: advancedReview, tailoredResumeSuggestions, interviewQuestions, bulletRewriteSuggestions, error. Do not return markdown code fences. Do not include text outside JSON. Strictly obey all count limits. The final visible report must contain at most 12 content items total. Return exactly 4 interview questions only, with no answers or hints. Always set bulletRewriteSuggestions to null. Use null instead of blank strings.'
           },
           {
             role: 'user',
@@ -95,7 +95,7 @@ app.post('/api/analyze-resume', async (req, res) => {
         parsed.tailoredResumeSuggestions || combineOptimizedAndMissing(parsed)
       ),
       interviewQuestions: nullableReadableString(parsed.interviewQuestions),
-      bulletRewriteSuggestions: nullableReadableString(parsed.bulletRewriteSuggestions),
+      bulletRewriteSuggestions: null,
       error: parsed.error || null
     });
   } catch (error) {
@@ -115,23 +115,56 @@ Return a concise mobile-friendly JSON answer.
 
 Required output limits:
 
-* advancedReview: exactly 4 short bullets maximum.
-* tailoredResumeSuggestions: exactly 4 bullets total maximum, across Optimized Resume Points and Missing JD-Based Points combined.
-* interviewQuestions: exactly 4 questions maximum.
-* Each question must contain only:
-  Q1. [question]
-  Strong answer should mention: [one short sentence or two short phrases]
-* Do not include “Based on”, “Why this may be asked”, “Follow-up probe”, or long explanations.
-* bulletRewriteSuggestions: return null unless there is a very clear rewrite opportunity, but Android will not display this section.
-* Total visible content items must be no more than 12:
-  4 advanced review bullets + 4 suggestion bullets + 4 question blocks.
+* Advanced AI Review: maximum 4 bullets.
+* Optimized Resume Points + Missing JD-Based Points: maximum 4 bullets total across both headings.
+* Resume-Specific Interview Questions: exactly 4 questions, not 5, not 8, not 10.
+* Questions only. No answers, no hints, no “Strong answer should mention”, no “Based on”, no “Why this may be asked”, no “Follow-up probe”, no “Answer”, and no “Suggested answer”.
+* Optional Resume Point Rewrites must be null and must not be displayed in Android.
+* Total visible AI report maximum: 12 items:
+  4 review bullets + 4 suggestion/JD bullets + 4 questions.
+
+Interview question requirements:
+
+Generate exactly 4 difficult, resume-specific interview questions.
+
+The questions should be challenging and should test whether the candidate can deeply explain their actual work.
+
+Each question must reference:
+* a concrete resume project, skill, tool, responsibility, metric, or JD requirement.
+
+Prefer questions that ask about:
+* technical/design tradeoffs
+* debugging decisions
+* implementation details
+* measurable impact
+* ownership and exact contribution
+* limitations or failure cases
+* why a specific tool/approach was used
+* how the candidate would improve the work now
+
+Do not ask generic questions such as:
+* Tell me about yourself.
+* Why this role?
+* What are your strengths/weaknesses?
+* What would you do in the first 30 days?
+* Generic teamwork/conflict questions.
+* Generic behavioral questions.
+
+Return questions only in this exact format:
+
+Q1. ...
+Q2. ...
+Q3. ...
+Q4. ...
+
+Do not include any answer guidance.
 
 Use this JSON shape:
 
 {
 "advancedReview": "• ...\n• ...\n• ...\n• ...",
 "tailoredResumeSuggestions": "Optimized Resume Points\n• ...\n• ...\n\nMissing JD-Based Points\n• ...\n• ...",
-"interviewQuestions": "Q1. ...\nStrong answer should mention: ...\n\nQ2. ...\nStrong answer should mention: ...\n\nQ3. ...\nStrong answer should mention: ...\n\nQ4. ...\nStrong answer should mention: ...",
+"interviewQuestions": "Q1. ...\nQ2. ...\nQ3. ...\nQ4. ...",
 "bulletRewriteSuggestions": null,
 "error": null
 }

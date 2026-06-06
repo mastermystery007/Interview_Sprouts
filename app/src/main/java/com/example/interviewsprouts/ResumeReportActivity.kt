@@ -262,11 +262,11 @@ class ResumeReportActivity : AppCompatActivity() {
 
     private fun compactAdvancedReview(text: String?): String {
         val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review", "Advanced Review")
-        if (cleaned.isBlank() || cleaned.equals("null", ignoreCase = true)) return ""
+        if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val lines = cleaned.lines()
             .map { normalizeVisibleLine(it) }
-            .filter { it.isNotBlank() && !isRemovedAdvancedLine(it) }
+            .filter { it.isNotBlank() && !isNullLiteral(it) && !isRemovedAdvancedLine(it) }
 
         val bulletTexts = lines.mapNotNull { line ->
             val withoutBullet = line.removePrefix("•").trim()
@@ -282,7 +282,7 @@ class ResumeReportActivity : AppCompatActivity() {
 
         return bulletTexts
             .map { it.trim().trimStart('-', '*', '•').replace(Regex("^\\d+[.)]\\s*"), "").trim() }
-            .filter { it.isNotBlank() && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
+            .filter { it.isNotBlank() && !isNullLiteral(it) && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
             .take(4)
             .joinToString("\n") { "• $it" }
     }
@@ -294,7 +294,7 @@ class ResumeReportActivity : AppCompatActivity() {
             "Tailored Resume Suggestions",
             "Add suggested skills or tools only if they are true."
         )
-        if (cleaned.isBlank() || cleaned.equals("null", ignoreCase = true)) return ""
+        if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val optimized = mutableListOf<String>()
         val missing = mutableListOf<String>()
@@ -303,14 +303,14 @@ class ResumeReportActivity : AppCompatActivity() {
 
         cleaned.lines().forEach { rawLine ->
             val line = normalizeVisibleLine(rawLine)
-            if (line.isBlank() || isRemovedAdvancedLine(line)) return@forEach
+            if (line.isBlank() || isNullLiteral(line) || isRemovedAdvancedLine(line)) return@forEach
             when {
                 isSectionHeadingLine(line, "Optimized Resume Points") -> currentSection = "optimized"
                 isSectionHeadingLine(line, "Missing JD-Based Points") -> currentSection = "missing"
                 looksLikeStandaloneHeading(line) -> Unit
                 else -> {
                     val bullet = line.trim().trimStart('•', '-', '*').replace(Regex("^\\d+[.)]\\s*"), "").trim()
-                    if (bullet.isNotBlank()) {
+                    if (bullet.isNotBlank() && !isNullLiteral(bullet)) {
                         when (currentSection) {
                             "optimized" -> optimized.add(bullet)
                             "missing" -> missing.add(bullet)
@@ -354,38 +354,24 @@ class ResumeReportActivity : AppCompatActivity() {
 
     private fun compactQuestions(text: String?): String {
         val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Resume-Specific Interview Questions", "Interview Questions")
-        if (cleaned.isBlank() || cleaned.equals("null", ignoreCase = true)) return ""
+        if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
-        val blocks = Regex("(?im)(?=^(?:Q\\d+\\.|\\d+[.)])\\s+)")
-            .split(cleaned)
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .ifEmpty { cleaned.lines().filter { it.trim().endsWith("?") } }
+        val questionPrefix = Regex("^(?:Q\\d+\\.|\\d+[.)])\\s+(.+)", RegexOption.IGNORE_CASE)
+        val questions = cleaned.lines()
+            .map { normalizeVisibleLine(it) }
+            .filter { it.isNotBlank() && !isNullLiteral(it) && !isRemovedQuestionLine(it) && !looksLikeStandaloneHeading(it) }
+            .mapNotNull { line ->
+                val prefixedQuestion = questionPrefix.find(line)?.groupValues?.getOrNull(1)
+                val question = prefixedQuestion ?: line.takeIf { it.endsWith("?") }
+                question
+                    ?.trim()
+                    ?.trimStart('-', '*', '•')
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() && !isRemovedQuestionLine(it) }
+            }
+            .take(4)
 
-        val formattedBlocks = blocks.mapNotNull { block ->
-            val keptLines = block.lines()
-                .map { normalizeVisibleLine(it) }
-                .filter { it.isNotBlank() && !isRemovedQuestionLine(it) }
-            val questionLine = keptLines.firstOrNull { line ->
-                line.matches(Regex("^(?:Q\\d+\\.|\\d+[.)])\\s+.+", RegexOption.IGNORE_CASE)) || line.endsWith("?")
-            } ?: return@mapNotNull null
-            val question = questionLine
-                .replace(Regex("^(?:Q\\d+\\.|\\d+[.)])\\s*", RegexOption.IGNORE_CASE), "")
-                .trim()
-                .trimStart('-', '*', '•')
-                .trim()
-            if (question.isBlank()) return@mapNotNull null
-            val strongAnswer = keptLines.firstOrNull { it.startsWith("Strong answer should mention:", ignoreCase = true) }
-                ?.substringAfter(":")
-                ?.trim()
-                ?.takeIf { it.isNotBlank() }
-                ?: "concrete resume evidence and a verified outcome."
-            question to strongAnswer
-        }.take(4)
-
-        return formattedBlocks.mapIndexed { index, (question, strongAnswer) ->
-            "Q${index + 1}. $question\nStrong answer should mention: $strongAnswer"
-        }.joinToString("\n\n")
+        return questions.mapIndexed { index, question -> "Q${index + 1}. $question" }.joinToString("\n")
     }
 
     private fun removeBlankLines(text: String): String = text.lines()
@@ -405,16 +391,18 @@ class ResumeReportActivity : AppCompatActivity() {
 
     private fun normalizeVisibleLine(line: String): String = line.trim().replace(Regex("\\s+"), " ")
 
+    private fun isNullLiteral(text: String): Boolean = text.trim().equals("null", ignoreCase = true)
+
     private fun isRemovedAdvancedLine(line: String): Boolean = isRemovedQuestionLine(line) ||
         isSectionHeadingLine(line, "Metric Evidence Detected") ||
         line.startsWith("Honesty reminder", ignoreCase = true) ||
         line.startsWith("Add suggested skills or tools only if they are true", ignoreCase = true)
 
     private fun isRemovedQuestionLine(line: String): Boolean =
-        line.startsWith("Based on:", ignoreCase = true) ||
-            line.startsWith("Why this may be asked:", ignoreCase = true) ||
-            line.startsWith("Follow-up probe:", ignoreCase = true) ||
-            line.startsWith("Follow up probe:", ignoreCase = true)
+        Regex(
+            "^(Strong answer should mention|Based on|Why this may be asked|Follow[- ]?up probe|Answer|Suggested answer)\\b",
+            RegexOption.IGNORE_CASE
+        ).containsMatchIn(line.trim())
 
     private fun looksLikeStandaloneHeading(line: String): Boolean = listOf(
         "Advanced AI Review",
@@ -437,7 +425,7 @@ class ResumeReportActivity : AppCompatActivity() {
         .replace("\n", " ")
         .split(Regex("(?<=[.!?])\\s+"))
         .map { it.trim().trimStart('-', '*', '•').replace(Regex("^\\d+[.)]\\s*"), "").trim() }
-        .filter { it.isNotBlank() && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
+        .filter { it.isNotBlank() && !isNullLiteral(it) && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
 
     private fun applyReportFormatting(text: String): CharSequence {
         val builder = SpannableStringBuilder(text)
@@ -876,19 +864,23 @@ ${formatExamples(missing, "No major missing section detected.")}
         signals.addAll(extractCandidateBullets(resumeText))
 
         val uniqueSignals = signals.map { shortenLabel(it, 120) }.filter { it.isNotBlank() }.distinct().take(4)
-        if (uniqueSignals.isEmpty()) {
-            return "Q1. What real project, skill, or achievement best supports your fit for $targetRole?\nStrong answer should mention: concrete resume evidence and a verifiable result."
-        }
+        val fallbackSignals = listOf(
+            "target role: $targetRole",
+            "experience level: $experienceLevel",
+            "strongest resume project or responsibility",
+            "most relevant resume skill or tool"
+        )
+        val questionSignals = (uniqueSignals + fallbackSignals).distinct().take(4)
 
-        return uniqueSignals.take(4).mapIndexed { index, signal ->
+        return questionSignals.mapIndexed { index, signal ->
             val focus = when {
-                signal.startsWith("Detected skill/keyword:") -> "how you used this skill in a real $targetRole context"
-                signal.startsWith("JD match:") -> "how this JD requirement appears in your resume evidence"
-                Regex("[%0-9]").containsMatchIn(signal) -> "the measurable result and how it was achieved"
-                else -> "the work behind this resume line"
+                signal.startsWith("Detected skill/keyword:") -> "what technical or design tradeoff did you make while using this skill in a real $targetRole context"
+                signal.startsWith("JD match:") -> "how does this JD requirement appear in your resume evidence, and what implementation details prove your contribution"
+                Regex("[%0-9]").containsMatchIn(signal) -> "how was this measurable result achieved, validated, and limited by your exact contribution"
+                else -> "what implementation decisions, failure cases, and ownership details sit behind this resume line"
             }
-            "Q${index + 1}. Your resume mentions \"$signal\". Can you explain $focus, your exact role, and what outcome you can verify?\nStrong answer should mention: specific resume evidence and a verifiable result."
-        }.joinToString("\n\n")
+            "Q${index + 1}. Your resume mentions \"$signal\". $focus?"
+        }.joinToString("\n")
     }
 
     private fun detectSectionSignals(resumeText: String): List<String> {

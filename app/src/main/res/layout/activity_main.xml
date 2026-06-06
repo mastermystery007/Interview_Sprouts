@@ -19,16 +19,15 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- TODO: Add InterviewSprout logo asset to drawable/mipmap and use it on the home screen. -->
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="InterviewSprout"
-                android:textColor="#111111"
-                android:textSize="32sp"
-                android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/imageAppLogo"
+                android:layout_width="220dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:adjustViewBounds="true"
+                android:contentDescription="InterviewSprout logo"
+                android:scaleType="fitCenter"
+                android:src="@drawable/interviewsprout_logo" />
 
             <TextView
                 android:layout_width="match_parent"
