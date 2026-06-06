@@ -12,12 +12,14 @@ object AiClient {
     private val retrofitBaseUrl = if (isPlaceholderBackendUrl()) {
         "https://example.com/"
     } else {
-        BACKEND_BASE_URL
+        BACKEND_BASE_URL.ensureTrailingSlash()
     }
 
     fun isPlaceholderBackendUrl(): Boolean =
         BACKEND_BASE_URL.contains("YOUR_BACKEND_URL") ||
             BACKEND_BASE_URL.contains("YOUR_LAPTOP_IP")
+
+    private fun String.ensureTrailingSlash(): String = if (endsWith("/")) this else "$this/"
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
