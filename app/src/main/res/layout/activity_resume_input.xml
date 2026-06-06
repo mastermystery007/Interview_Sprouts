@@ -113,7 +113,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Privacy: Your resume is processed only to generate feedback. Reports are not saved unless you choose to save them locally."
+            android:text="Your resume is processed for feedback. Advanced AI review sends resume text and job description to our backend only after you unlock it."
             android:textColor="#555555"
             android:textSize="12sp"
             android:layout_marginTop="16dp" />
