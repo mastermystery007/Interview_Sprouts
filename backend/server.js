@@ -134,6 +134,18 @@ Return a concise mobile-friendly JSON answer with these sections:
 - Generate exactly 8-10 questions.
 - Every question must reference an actual resume excerpt, project, skill, tool, metric, or JD requirement.
 - No generic questions.
+- Do not ask generic questions such as:
+  * Tell me about yourself.
+  * Why this role?
+  * What are your strengths/weaknesses?
+  * What would you do in the first 30 days?
+  * Tell me about a conflict/teamwork situation, unless it directly references a resume item.
+  * Describe feedback you received, unless it directly references a resume item.
+- Every question must refer to:
+  * a resume excerpt, OR
+  * a detected skill/tool/project, OR
+  * measurable evidence, OR
+  * a JD requirement.
 - Each question should use this format:
   Q1. ...
   Based on: "..."
