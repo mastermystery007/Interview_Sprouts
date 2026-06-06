@@ -4,8 +4,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Local backend testing only. Use HTTPS and remove/avoid cleartext traffic for production. -->
     <application
         android:allowBackup="true"
+        android:usesCleartextTraffic="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"

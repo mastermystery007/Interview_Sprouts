@@ -192,7 +192,7 @@ class ResumeReportActivity : AppCompatActivity() {
         targetRole: String,
         experienceLevel: String,
         jobSpecification: String
-    ): String = "AI backend unavailable. Showing offline fallback.\n\n" + generateAdvancedLlmReview(resumeText, targetRole, experienceLevel, jobSpecification)
+    ): String = "AI backend unavailable or unreachable. Showing offline fallback.\n\n" + generateAdvancedLlmReview(resumeText, targetRole, experienceLevel, jobSpecification)
 
     private fun generateAdvancedLlmReview(
         resumeText: String,

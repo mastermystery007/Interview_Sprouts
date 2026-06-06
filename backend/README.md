@@ -32,6 +32,18 @@ curl -X POST http://localhost:3000/api/analyze-resume \
   }'
 ```
 
+
+## Local phone backend testing
+
+1. Run backend: `cd backend && npm start`
+2. Find laptop Wi-Fi IPv4 address.
+3. Confirm phone can open: `http://LAPTOP_IP:3000/health`
+4. Set AiClient `BACKEND_BASE_URL` to: `http://LAPTOP_IP:3000/`
+5. Rebuild and install the app.
+6. Upload resume → analyze → first unlock → second unlock. The second unlock calls the backend.
+
+Do not include secrets or API keys in the README.
+
 ## API
 
 `POST /api/analyze-resume`
