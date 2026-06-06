@@ -1,10 +1,12 @@
 package com.example.interviewsprouts
 
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Spannable
 import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.graphics.Typeface
 import android.view.View
@@ -68,7 +70,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
         findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
         findViewById<TextView>(R.id.textAdvancedLockedMessage).text =
-            "Advanced AI review with optimized resume points, JD-specific missing points, and detailed resume-based interview questions is locked. Watch another ad to unlock.\n\nAdvanced AI review sends your resume text and job description to our backend only after this second unlock."
+            "Advanced AI review with resume improvement suggestions and detailed resume-based interview questions is locked. Watch another ad to unlock.\n\nAdvanced AI review sends your resume text and job description to our backend only after this second unlock."
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
 
         tabOverview = findViewById(R.id.tabOverview)
@@ -249,7 +251,7 @@ class ResumeReportActivity : AppCompatActivity() {
             sections.add("Advanced AI Review\n$advancedReview")
         }
         if (suggestions.isNotBlank()) {
-            sections.add("Optimized Resume Points + Missing JD-Based Points\n$suggestions")
+            sections.add("Resume Improvement Suggestions\n$suggestions")
         }
         if (questions.isNotBlank()) {
             sections.add("Resume-Specific Interview Questions\n$questions")
@@ -264,114 +266,124 @@ class ResumeReportActivity : AppCompatActivity() {
         val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review", "Advanced Review")
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
-        val lines = cleaned.lines()
-            .map { normalizeVisibleLine(it) }
-            .filter { it.isNotBlank() && !isNullLiteral(it) && !isRemovedAdvancedLine(it) }
-
-        val bulletTexts = lines.mapNotNull { line ->
-            val withoutBullet = line.removePrefix("•").trim()
-            when {
-                withoutBullet.isBlank() -> null
-                looksLikeStandaloneHeading(withoutBullet) -> null
-                line.startsWith("•") || line.matches(Regex("^[-*]\\s+.+")) || line.matches(Regex("^\\d+[.)]\\s+.+")) -> withoutBullet
-                else -> null
-            }
-        }.ifEmpty {
-            splitParagraphIntoSentences(cleaned)
-        }
-
-        return bulletTexts
-            .map { it.trim().trimStart('-', '*', '•').replace(Regex("^\\d+[.)]\\s*"), "").trim() }
+        val items = extractBulletLikeItems(cleaned, splitSemicolons = true)
+            .map { sanitizeAdvancedBullet(it) }
             .filter { it.isNotBlank() && !isNullLiteral(it) && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
+            .distinctBy { it.lowercase() }
             .take(4)
-            .joinToString("\n") { "• $it" }
+
+        return items.joinToString("\n") { "• $it" }
     }
 
     private fun compactSuggestions(text: String?): String {
         val cleaned = stripDuplicateSectionHeading(
             text.orEmpty(),
             "Optimized Resume Points + Missing JD-Based Points",
+            "Optimized Resume Points",
+            "Missing JD-Based Points",
             "Tailored Resume Suggestions",
+            "Resume Improvement Suggestions",
             "Add suggested skills or tools only if they are true."
         )
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
-        val optimized = mutableListOf<String>()
-        val missing = mutableListOf<String>()
-        val general = mutableListOf<String>()
-        var currentSection = "general"
+        val items = extractBulletLikeItems(cleaned, splitSemicolons = false)
+            .map { sanitizeSuggestionBullet(it) }
+            .filter { it.isNotBlank() && !isNullLiteral(it) && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
+            .distinctBy { it.lowercase() }
+            .take(4)
 
-        cleaned.lines().forEach { rawLine ->
-            val line = normalizeVisibleLine(rawLine)
-            if (line.isBlank() || isNullLiteral(line) || isRemovedAdvancedLine(line)) return@forEach
-            when {
-                isSectionHeadingLine(line, "Optimized Resume Points") -> currentSection = "optimized"
-                isSectionHeadingLine(line, "Missing JD-Based Points") -> currentSection = "missing"
-                looksLikeStandaloneHeading(line) -> Unit
-                else -> {
-                    val bullet = line.trim().trimStart('•', '-', '*').replace(Regex("^\\d+[.)]\\s*"), "").trim()
-                    if (bullet.isNotBlank() && !isNullLiteral(bullet)) {
-                        when (currentSection) {
-                            "optimized" -> optimized.add(bullet)
-                            "missing" -> missing.add(bullet)
-                            else -> general.add(bullet)
-                        }
-                    }
-                }
-            }
-        }
-
-        if (optimized.isEmpty() && missing.isEmpty() && general.isEmpty()) {
-            general.addAll(splitParagraphIntoSentences(cleaned))
-        }
-
-        val selectedOptimized: List<String>
-        val selectedMissing: List<String>
-        val selectedGeneral: List<String>
-        if (optimized.isNotEmpty() && missing.isNotEmpty()) {
-            selectedOptimized = optimized.take(2)
-            selectedMissing = missing.take(4 - selectedOptimized.size).take(2)
-            val remaining = 4 - selectedOptimized.size - selectedMissing.size
-            selectedGeneral = if (remaining > 0) (optimized.drop(selectedOptimized.size) + missing.drop(selectedMissing.size) + general).take(remaining) else emptyList()
-        } else {
-            selectedOptimized = optimized.take(4)
-            selectedMissing = missing.take(4 - selectedOptimized.size)
-            selectedGeneral = general.take(4 - selectedOptimized.size - selectedMissing.size)
-        }
-
-        val parts = mutableListOf<String>()
-        if (selectedOptimized.isNotEmpty()) {
-            parts.add("Optimized Resume Points\n" + selectedOptimized.joinToString("\n") { "• $it" })
-        }
-        if (selectedMissing.isNotEmpty()) {
-            parts.add("Missing JD-Based Points\n" + selectedMissing.joinToString("\n") { "• $it" })
-        }
-        if (parts.isEmpty() && selectedGeneral.isNotEmpty()) {
-            parts.add(selectedGeneral.joinToString("\n") { "• $it" })
-        }
-        return removeBlankLines(parts.joinToString("\n"))
+        return items.joinToString("\n") { "• $it" }
     }
 
     private fun compactQuestions(text: String?): String {
         val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Resume-Specific Interview Questions", "Interview Questions")
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
-        val questionPrefix = Regex("^(?:Q\\d+\\.|\\d+[.)])\\s+(.+)", RegexOption.IGNORE_CASE)
-        val questions = cleaned.lines()
+        val normalized = cleaned
+            .replace(Regex("""(?i)(?=\bQ\d+[.)]\s+)"""), "\n")
+            .replace(Regex("""(?m)^\s*[-*•]\s*"""), "")
+
+        val questionPrefix = Regex("""^(?:Q\d+\.|\d+[.)])\s*(.+)""", RegexOption.IGNORE_CASE)
+        val questions = normalized.lines()
             .map { normalizeVisibleLine(it) }
-            .filter { it.isNotBlank() && !isNullLiteral(it) && !isRemovedQuestionLine(it) && !looksLikeStandaloneHeading(it) }
-            .mapNotNull { line ->
-                val prefixedQuestion = questionPrefix.find(line)?.groupValues?.getOrNull(1)
-                val question = prefixedQuestion ?: line.takeIf { it.endsWith("?") }
-                question
-                    ?.trim()
-                    ?.trimStart('-', '*', '•')
-                    ?.trim()
-                    ?.takeIf { it.isNotBlank() && !isRemovedQuestionLine(it) }
-            }
+            .flatMap { line -> splitQuestionLine(line, questionPrefix) }
+            .mapNotNull { rawQuestion -> sanitizeQuestion(rawQuestion) }
+            .filter { isCompleteSpecificQuestion(it) }
+            .distinctBy { it.lowercase() }
             .take(4)
 
         return questions.mapIndexed { index, question -> "Q${index + 1}. $question" }.joinToString("\n")
+    }
+
+    private fun extractBulletLikeItems(text: String, splitSemicolons: Boolean): List<String> {
+        val normalized = text
+            .replace("\r", "\n")
+            .replace(Regex("""(?<!^)\s+[•▪◦]\s*"""), "\n• ")
+            .replace(Regex("""(?i)(?<!^)\s+(?=\d+[.)]\s+)"""), "\n")
+            .replace(Regex("""\s+-\s+"""), "\n")
+
+        val lineItems = normalized.lines()
+            .map { normalizeVisibleLine(it) }
+            .filter { it.isNotBlank() && !looksLikeStandaloneHeading(it) }
+            .flatMap { line ->
+                val base = line.trim().trimStart('-', '*', '•', '▪', '◦').replace(Regex("""^\d+[.)]\s*"""), "").trim()
+                if (splitSemicolons) base.split(Regex(""";\s*""")) else listOf(base)
+            }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        return lineItems.ifEmpty { splitParagraphIntoSentences(text) }
+    }
+
+    private fun sanitizeAdvancedBullet(text: String): String {
+        val withoutNestedMarkers = text
+            .replace(Regex("[•▪◦]+"), " ")
+            .replace(Regex("""\b[1-4][.)]\s*"""), " ")
+            .replace(Regex("""\s+-\s+"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+        return firstSentence(withoutNestedMarkers)
+    }
+
+    private fun sanitizeSuggestionBullet(text: String): String = text
+        .replace(Regex("[•▪◦]+"), " ")
+        .replace(Regex("""^\d+[.)]\s*"""), "")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
+
+    private fun splitQuestionLine(line: String, questionPrefix: Regex): List<String> {
+        if (line.isBlank() || looksLikeStandaloneHeading(line)) return emptyList()
+        val prefixedQuestion = questionPrefix.find(line)?.groupValues?.getOrNull(1)
+        val candidate = prefixedQuestion ?: line
+        return candidate.split(Regex("""(?<=\?)\s+(?=(?:Q\d+\.|\d+[.)])?\s*[A-Z])"""))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+    }
+
+    private fun sanitizeQuestion(text: String): String? {
+        var question = text.trim().trimStart('-', '*', '•').replace(Regex("""^(?:Q\d+\.|\d+[.)])\s*""", RegexOption.IGNORE_CASE), "").trim()
+        question = question.replace(Regex("""^(?:Follow[- ]?up|Probe)\s*[:：-]\s*""", RegexOption.IGNORE_CASE), "").trim()
+        if (Regex("""\b(follow[- ]?up|probe)\b""", RegexOption.IGNORE_CASE).containsMatchIn(question)) return null
+        question = question.substringBefore("Strong answer should mention", question).substringBefore("Suggested answer", question).substringBefore("Answer:", question).substringBefore("Hint:", question).trim()
+        if (!question.endsWith("?")) return null
+        return question
+    }
+
+    private fun isCompleteSpecificQuestion(question: String): Boolean {
+        val lower = question.lowercase()
+        if (question.length < 45) return false
+        if (lower.contains("tell me about") || lower.contains("describe your experience generally")) return false
+        val genericPatterns = listOf(
+            "why this role", "tell me about yourself", "strengths", "weaknesses", "first 30 days", "teamwork", "conflict"
+        )
+        if (genericPatterns.any { lower.contains(it) }) return false
+        return true
+    }
+
+    private fun firstSentence(text: String): String {
+        val match = Regex("""^(.+?[.!?])(?:\s+|$)""").find(text)
+        return (match?.groupValues?.getOrNull(1) ?: text).trim()
     }
 
     private fun removeBlankLines(text: String): String = text.lines()
@@ -400,7 +412,7 @@ class ResumeReportActivity : AppCompatActivity() {
 
     private fun isRemovedQuestionLine(line: String): Boolean =
         Regex(
-            "^(Strong answer should mention|Based on|Why this may be asked|Follow[- ]?up probe|Answer|Suggested answer)\\b",
+            """^(Strong answer should mention|Based on|Why this may be asked|Follow[- ]?up probe|Follow[- ]?up|Probe|Answer|Suggested answer|Hint)\b""",
             RegexOption.IGNORE_CASE
         ).containsMatchIn(line.trim())
 
@@ -415,7 +427,8 @@ class ResumeReportActivity : AppCompatActivity() {
         "Interview Questions",
         "Optional Resume Point Rewrites",
         "Optional Resume Point Rewrites / cleanup notes",
-        "Tailored Resume Suggestions"
+        "Tailored Resume Suggestions",
+        "Resume Improvement Suggestions"
     ).any { isSectionHeadingLine(line, it) }
 
     private fun isSectionHeadingLine(line: String, heading: String): Boolean =
@@ -430,6 +443,14 @@ class ResumeReportActivity : AppCompatActivity() {
     private fun applyReportFormatting(text: String): CharSequence {
         val builder = SpannableStringBuilder(text)
         val headings = listOf(
+            "Overview:",
+            "Category signals:",
+            "Top fixes:",
+            "Keyword Match:",
+            "Measurable Details:",
+            "Strong Action Verbs:",
+            "Section Clarity:",
+            "Role Relevance:",
             "Missing keywords:",
             "Missing important sections:",
             "Weak bullets:",
@@ -441,24 +462,42 @@ class ResumeReportActivity : AppCompatActivity() {
             "JD-specific missing points:",
             "JD keywords already evidenced:",
             "Advanced AI Review",
-            "Metric Evidence Detected",
-            "Optimized Resume Points",
-            "Missing JD-Based Points",
+            "Resume Improvement Suggestions",
             "Resume-Specific Interview Questions",
-            "Optional Resume Point Rewrites",
             "Full Heuristic Analysis",
             "Category Findings:"
         )
         headings.forEach { heading ->
-            var searchStart = 0
-            while (searchStart < text.length) {
-                val index = text.indexOf(heading, searchStart, ignoreCase = true)
-                if (index == -1) break
-                builder.setSpan(StyleSpan(Typeface.BOLD), index, index + heading.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                searchStart = index + heading.length
+            applySpanToMatches(text, heading) { start, end ->
+                builder.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+
+        val positiveColor = Color.rgb(24, 128, 82)
+        val gapColor = Color.rgb(190, 82, 32)
+        val positiveSignals = listOf("Found keywords:", "Role Keywords Found:", "JD Keywords Found:", "Strong evidence", "Excellent", "Good")
+        val gapSignals = listOf("Missing keywords:", "Role Keywords Missing:", "JD Keywords Missing:", "Weak bullets:", "Missing measurable impact:", "Main gap", "Low", "Lacking", "Needs Improvement")
+        positiveSignals.forEach { signal ->
+            applySpanToMatches(text, signal) { start, end ->
+                builder.setSpan(ForegroundColorSpan(positiveColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+        gapSignals.forEach { signal ->
+            applySpanToMatches(text, signal) { start, end ->
+                builder.setSpan(ForegroundColorSpan(gapColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }
         return builder
+    }
+
+    private fun applySpanToMatches(text: String, target: String, apply: (Int, Int) -> Unit) {
+        var searchStart = 0
+        while (searchStart < text.length) {
+            val index = text.indexOf(target, searchStart, ignoreCase = true)
+            if (index == -1) break
+            apply(index, index + target.length)
+            searchStart = index + target.length
+        }
     }
 
 
@@ -508,11 +547,9 @@ class ResumeReportActivity : AppCompatActivity() {
         }
         val suggestions = buildString {
             if (optimizedBullets.isNotEmpty()) {
-                appendLine("Optimized Resume Points")
                 optimizedBullets.take(2).forEach { appendLine("• $it") }
             }
             if (missingBullets.isNotEmpty()) {
-                appendLine("Missing JD-Based Points")
                 missingBullets.take(4 - optimizedBullets.take(2).size).forEach { appendLine("• $it") }
             }
         }.trim()
@@ -521,7 +558,7 @@ class ResumeReportActivity : AppCompatActivity() {
 Advanced AI Review
 ${compactAdvancedReview(advanced)}
 
-Optimized Resume Points + Missing JD-Based Points
+Resume Improvement Suggestions
 ${compactSuggestions(suggestions)}
 
 Resume-Specific Interview Questions
@@ -787,7 +824,7 @@ ${formatExamples(missing, "No major missing section detected.")}
 
     private fun extractMetricExamples(resumeText: String): List<String> {
         return resumeLines(resumeText)
-            .map { stripContactNoise(it).replace(Regex("""\s+"""), " ").trim() }
+            .map { stripContactNoise(it).replace(Regex("""""\s+"""""), " ").trim() }
             .filter { it.length >= 10 }
             .filter { hasMeasurableImpactSignal(it) }
             .map { shortenLabel(it, 150) }
@@ -831,7 +868,7 @@ ${formatExamples(missing, "No major missing section detected.")}
         val hasActionVerb = strongActionVerbs.any { Regex("""\b${Regex.escape(it)}\b""", RegexOption.IGNORE_CASE).containsMatchIn(bullet) }
         val hasMetric = hasMeasurableImpactSignal(bullet)
         val looksGeneric = lower.startsWith("worked on") || lower.startsWith("responsible for") || lower.startsWith("helped") ||
-            lower.split(Regex("""\s+""")).size < 8
+            lower.split(Regex("""""\s+""""")).size < 8
         val advice = when {
             detectedKeyword != null -> "Make the tool usage more specific: explain what you built, changed, tested, analyzed, or delivered using $detectedKeyword."
             hasActionVerb -> "Keep the strong action verb, but add scope/context: who used it, what system/process it affected, and what changed."
@@ -935,7 +972,7 @@ ${formatExamples(missing, "No major missing section detected.")}
     private fun isBareStopwordFragment(line: String): Boolean {
         val normalized = line.lowercase()
             .replace(Regex("""[^a-z]"""), " ")
-            .replace(Regex("""\s+"""), " ")
+            .replace(Regex("""""\s+"""""), " ")
             .trim()
         return normalized in setOf("and", "or", "with", "for", "to", "in", "on", "of", "the", "a", "an")
     }
@@ -987,7 +1024,7 @@ ${formatExamples(missing, "No major missing section detected.")}
     private fun extractSimpleKeywordsFromJobSpec(jobSpecLower: String): List<String> {
         if (jobSpecLower.isBlank()) return emptyList()
         val possibleKeywords = listOf("sql", "excel", "python", "power bi", "tableau", "google analytics", "seo", "sem", "google ads", "meta ads", "stakeholder management", "requirements gathering", "user stories", "uat", "jira", "agile", "scrum", "rest api", "git", "kotlin", "java", "campaign management", "lead generation", "a/b testing", "conversion rate", "ctr", "cpc", "cpa", "roas", "financial modeling", "forecasting", "budgeting", "dashboard", "reporting", "market research", "product roadmap", "communication", "project management", "crm", "sales pipeline", "cold calling", "client relationship management", "recruitment", "talent acquisition", "onboarding", "figma", "wireframing", "prototyping", "usability testing", "process improvement", "operations management", "workflow optimization", "supply chain", "vendor management", "risk management")
-        val normalized = jobSpecLower.replace(Regex("""[^a-z0-9+/\s.-]"""), " ").replace(Regex("""\s+"""), " ").trim()
+        val normalized = jobSpecLower.replace(Regex("""[^a-z0-9+/\s.-]"""), " ").replace(Regex("""""\s+"""""), " ").trim()
         val knownKeywords = possibleKeywords.filter { normalized.contains(it) }
         val stopwords = setOf(
             "the", "and", "or", "with", "for", "from", "this", "that", "role", "candidate", "experience", "years", "year", "team", "work", "ability", "strong", "good", "excellent", "required", "preferred", "plus", "etc",
@@ -1003,7 +1040,7 @@ ${formatExamples(missing, "No major missing section detected.")}
         }
         fun hasTechnicalToken(value: String): Boolean = value.split(" ").any { token -> token in technicalNouns || token.removeSuffix("s") in technicalNouns }
 
-        val rawTokens = normalized.split(Regex("""\s+""")).map(::normalizeToken).filter { it.isNotBlank() }
+        val rawTokens = normalized.split(Regex("""""\s+""""")).map(::normalizeToken).filter { it.isNotBlank() }
         val usefulTokens = rawTokens.filter(::isUsefulToken)
         val wordKeywords = usefulTokens.groupingBy { it }.eachCount()
             .toList()

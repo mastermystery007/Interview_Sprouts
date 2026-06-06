@@ -115,40 +115,70 @@ Return a concise mobile-friendly JSON answer.
 
 Required output limits:
 
-* Advanced AI Review: maximum 4 bullets.
-* Optimized Resume Points + Missing JD-Based Points: maximum 4 bullets total across both headings.
+* Advanced AI Review: exactly 4 separate bullet lines.
+* Resume Improvement Suggestions: exactly 4 bullets total.
 * Resume-Specific Interview Questions: exactly 4 questions, not 5, not 8, not 10.
-* Questions only. No answers, no hints, no “Strong answer should mention”, no “Based on”, no “Why this may be asked”, no “Follow-up probe”, no “Answer”, and no “Suggested answer”.
+* Questions only. No answers, no hints, no “Strong answer should mention”, no “Based on”, no “Why this may be asked”, no “Follow-up”, no “Probe”, no “Answer”, and no “Suggested answer”.
 * Optional Resume Point Rewrites must be null and must not be displayed in Android.
 * Total visible AI report maximum: 12 items:
   4 review bullets + 4 suggestion/JD bullets + 4 questions.
 
+Advanced AI Review rules:
+
+Return exactly 4 separate bullet lines.
+Each bullet must be one sentence only.
+Each bullet must start with '• '.
+Do not place multiple points inside one bullet.
+Do not use semicolon-separated lists inside one bullet.
+Do not use sub-bullets.
+Do not use numbered lists inside a bullet.
+Do not include headings inside advancedReview.
+Each bullet should cover one idea only:
+1. overall role fit
+2. strongest evidence
+3. main gap
+4. measurable/impact evidence or missing measurable evidence
+
+Resume Improvement Suggestions rules:
+
+Return exactly 4 bullets total in tailoredResumeSuggestions.
+Mix optimized resume point improvements and JD-gap suggestions in the same list.
+If a JD is provided, at least 1–2 bullets should address JD gaps or weak JD evidence.
+If no JD is provided, all 4 bullets can be role-relevant resume improvements.
+Do not include headings like “Optimized Resume Points”, “Missing JD-Based Points”, or “Resume Improvement Suggestions” inside the JSON value.
+Do not include sub-bullets.
+
 Interview question requirements:
 
-Generate exactly 4 difficult, resume-specific interview questions.
+Generate exactly 4 difficult, standalone, resume-specific questions.
+Each question must be complete by itself and must not be labelled as a follow-up.
+Do not use the words:
+* follow-up
+* follow up
+* probe
+* tell me about
+* describe your experience generally
 
-The questions should be challenging and should test whether the candidate can deeply explain their actual work.
+Each question must test deep understanding of actual resume evidence:
+* implementation choices
+* architecture/design tradeoffs
+* debugging or failure handling
+* performance/scalability/quality constraints
+* exact ownership and contribution
+* measurable impact validation
+* limitations and what the candidate would improve now
 
-Each question must reference:
-* a concrete resume project, skill, tool, responsibility, metric, or JD requirement.
+Each question must reference a concrete resume/JD signal:
+* project
+* tool
+* technology
+* metric
+* responsibility
+* system
+* JD requirement
 
-Prefer questions that ask about:
-* technical/design tradeoffs
-* debugging decisions
-* implementation details
-* measurable impact
-* ownership and exact contribution
-* limitations or failure cases
-* why a specific tool/approach was used
-* how the candidate would improve the work now
-
-Do not ask generic questions such as:
-* Tell me about yourself.
-* Why this role?
-* What are your strengths/weaknesses?
-* What would you do in the first 30 days?
-* Generic teamwork/conflict questions.
-* Generic behavioral questions.
+Questions should be hard to answer without real experience.
+Avoid generic behavioral questions.
 
 Return questions only in this exact format:
 
@@ -163,7 +193,7 @@ Use this JSON shape:
 
 {
 "advancedReview": "• ...\n• ...\n• ...\n• ...",
-"tailoredResumeSuggestions": "Optimized Resume Points\n• ...\n• ...\n\nMissing JD-Based Points\n• ...\n• ...",
+"tailoredResumeSuggestions": "• ...\n• ...\n• ...\n• ...",
 "interviewQuestions": "Q1. ...\nQ2. ...\nQ3. ...\nQ4. ...",
 "bulletRewriteSuggestions": null,
 "error": null
@@ -206,10 +236,7 @@ function parseJsonContent(content) {
 function combineOptimizedAndMissing(parsed) {
   const optimized = toReadableString(parsed.optimizedResumePoints);
   const missing = toReadableString(parsed.missingJobDescriptionPoints);
-  return [
-    optimized ? `Optimized Resume Points\n${optimized}` : '',
-    missing ? `Missing JD-Based Points\n${missing}` : ''
-  ].filter(Boolean).join('\n\n');
+  return [optimized, missing].filter(Boolean).join('\n');
 }
 
 function nullableReadableString(value) {
