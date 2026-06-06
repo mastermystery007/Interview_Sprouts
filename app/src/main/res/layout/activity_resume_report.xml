@@ -80,13 +80,13 @@
 
                 <com.example.interviewsprouts.ScoreCircleView
                     android:id="@+id/scoreCircleView"
-                    android:layout_width="132dp"
-                    android:layout_height="132dp" />
+                    android:layout_width="116dp"
+                    android:layout_height="116dp" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="18dp"
+                    android:layout_marginStart="14dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -94,8 +94,10 @@
                         android:id="@+id/textScoreValue"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:ellipsize="none"
+                        android:maxLines="2"
                         android:textColor="#111111"
-                        android:textSize="30sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
