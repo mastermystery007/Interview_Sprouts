@@ -3,8 +3,8 @@
     android:id="@+id/resumeInputRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="#FFFFFF">
+    android:background="#F6F9FC"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,118 +12,176 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Resume Review"
-            android:textColor="#111111"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:background="@drawable/bg_input_hero"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Resume Review"
+                android:textColor="#111111"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Upload your resume and compare it against your target role or job description."
+                android:textColor="#334155"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_file_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Resume PDF"
+                android:textColor="#111111"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Attach a PDF resume to analyze its extracted text."
+                android:textColor="#475569"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnUploadPdf"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Upload Resume PDF" />
+
+            <TextView
+                android:id="@+id/textAttachedFile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="No file attached"
+                android:textColor="#111111"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textExtractionStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Upload a PDF resume before analysis."
+                android:textColor="#64748B"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_form_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Target details"
+                android:textColor="#111111"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Target role"
+                android:textColor="#111111"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerTargetRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_input_field"
+                android:minHeight="48dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Experience"
+                android:textColor="#111111"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerExperienceLevel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_input_field"
+                android:minHeight="48dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="Job description"
+                android:textColor="#111111"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/editJobSpecification"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_input_field"
+                android:gravity="top"
+                android:hint="Optional: paste JD for tailored matching"
+                android:inputType="textMultiLine"
+                android:padding="12dp"
+                android:textColor="#111111"
+                android:textColorHint="#777777" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="JD text helps find missing skills, tools, and responsibilities."
+                android:textColor="#64748B"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Upload your resume PDF and add job details for better feedback."
-            android:textColor="#333333"
-            android:textSize="15sp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="20dp" />
-
-        <Button
-            android:id="@+id/btnUploadPdf"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Upload Resume PDF" />
-
-        <TextView
-            android:id="@+id/textAttachedFile"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="No file attached"
-            android:textColor="#111111"
-            android:textSize="14sp"
-            android:layout_marginTop="10dp" />
-
-        <TextView
-            android:id="@+id/textExtractionStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Upload a PDF resume before analysis."
-            android:textColor="#555555"
-            android:textSize="13sp"
-            android:layout_marginTop="4dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Target Profession"
-            android:textColor="#111111"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:layout_marginTop="20dp" />
-
-        <Spinner
-            android:id="@+id/spinnerTargetRole"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:layout_marginTop="8dp"
-            android:background="#F2F2F2"
-            android:padding="8dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Experience Level"
-            android:textColor="#111111"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp" />
-
-        <Spinner
-            android:id="@+id/spinnerExperienceLevel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="56dp"
-            android:layout_marginTop="8dp"
-            android:background="#F2F2F2"
-            android:padding="8dp" />
-
-        <EditText
-            android:id="@+id/editJobSpecification"
-            android:layout_width="match_parent"
-            android:layout_height="190dp"
-            android:gravity="top"
-            android:hint="Optional: Paste job specification / job description here..."
-            android:inputType="textMultiLine"
-            android:padding="12dp"
-            android:textColor="#111111"
-            android:textColorHint="#777777"
-            android:background="#F7F7F7"
-            android:layout_marginTop="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Tip: Job specifications help find missing skills, tools, keywords, and responsibilities for the exact role."
-            android:textColor="#555555"
-            android:textSize="12sp"
-            android:layout_marginTop="10dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Your resume is processed for feedback. Advanced AI review sends resume text and job description to our backend only after you unlock it."
-            android:textColor="#555555"
-            android:textSize="12sp"
-            android:layout_marginTop="16dp" />
+            android:layout_marginTop="14dp"
+            android:text="Privacy: advanced AI review sends resume text and JD to our backend only after you unlock it."
+            android:textColor="#64748B"
+            android:textSize="12sp" />
 
         <Button
             android:id="@+id/btnAnalyzeResume"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Analyze Resume"
-            android:layout_marginTop="20dp" />
+            android:layout_marginTop="18dp"
+            android:text="Analyze Resume" />
 
     </LinearLayout>
 </ScrollView>

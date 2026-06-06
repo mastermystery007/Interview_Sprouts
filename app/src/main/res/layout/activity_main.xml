@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
+    android:background="#F6F9FC"
     android:fillViewport="true">
 
     <LinearLayout
@@ -11,35 +11,65 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="InterviewSprout"
-            android:textColor="#111111"
-            android:textSize="32sp"
-            android:textStyle="bold" />
+            android:background="@drawable/bg_input_hero"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="InterviewSprout"
+                android:textColor="#111111"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Resume feedback, JD matching, and AI interview prep."
+                android:textColor="#334155"
+                android:textSize="16sp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Grow your resume. Practice smarter. Get job-ready."
+            android:layout_marginTop="22dp"
+            android:text="Start here"
             android:textColor="#111111"
-            android:textSize="16sp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp" />
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <Button
             android:id="@+id/btnResumeReview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
             android:text="Resume Review" />
 
         <Button
             android:id="@+id/btnSavedReports"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Saved Reports"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Saved Reports" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_form_card"
+            android:lineSpacingExtra="4dp"
+            android:padding="16dp"
+            android:text="Upload a resume PDF, choose a target role, and unlock deeper feedback with simulated rewarded ads."
+            android:textColor="#475569"
+            android:textSize="14sp" />
 
     </LinearLayout>
 </ScrollView>
