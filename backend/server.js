@@ -113,101 +113,204 @@ Job description provided: ${jobSpecification ? 'yes' : 'no'}
 
 Return a concise mobile-friendly JSON answer.
 
+This app supports many roles, including software, data, business analyst, recruiter, HR, sales, marketing, finance, operations, product, UX/design, and general business roles. Adapt the review and questions to the actual target role. Do not assume the role is technical unless the target role, job description, or resume clearly indicates it.
+
 Required output limits:
 
-* Advanced AI Review: exactly 4 separate bullet lines.
-* Resume Improvement Suggestions: exactly 4 bullets total.
-* Resume-Specific Interview Questions: exactly 4 questions, not 5, not 8, not 10.
-* Questions only. No answers, no hints, no “Strong answer should mention”, no “Based on”, no “Why this may be asked”, no “Follow-up”, no “Probe”, no “Answer”, and no “Suggested answer”.
-* Optional Resume Point Rewrites must be null and must not be displayed in Android.
+* advancedReview: exactly 4 separate bullet lines maximum.
+* tailoredResumeSuggestions: exactly 4 bullet lines maximum.
+* interviewQuestions: exactly 4 questions, not 5, not 8, not 10.
+* Questions only. No answers, no hints, no "Strong answer should mention", no "Based on", no "Why this may be asked", no "Follow-up probe", no "Answer", and no "Suggested answer".
+* bulletRewriteSuggestions: null.
 * Total visible AI report maximum: 12 items:
-  4 review bullets + 4 suggestion/JD bullets + 4 questions.
+  4 review bullets + 4 suggestion bullets + 4 questions.
 
-Advanced AI Review rules:
+1. advancedReview
 
-Return exactly 4 separate bullet lines.
-Each bullet must be one sentence only.
-Each bullet must start with '• '.
-Do not place multiple points inside one bullet.
-Do not use semicolon-separated lists inside one bullet.
-Do not use sub-bullets.
-Do not use numbered lists inside a bullet.
-Do not include headings inside advancedReview.
-Each bullet should cover one idea only:
-1. overall role fit
-2. strongest evidence
-3. main gap
-4. measurable/impact evidence or missing measurable evidence
+Return up to 4 bullets only.
 
-Resume Improvement Suggestions rules:
+Each bullet must:
 
-Return exactly 4 bullets total in tailoredResumeSuggestions.
-Mix optimized resume point improvements and JD-gap suggestions in the same list.
-If a JD is provided, at least 1–2 bullets should address JD gaps or weak JD evidence.
-If no JD is provided, all 4 bullets can be role-relevant resume improvements.
-Do not include headings like “Optimized Resume Points”, “Missing JD-Based Points”, or “Resume Improvement Suggestions” inside the JSON value.
-Do not include sub-bullets.
+* start with "• "
+* be one sentence only
+* cover one idea only
+* not contain sub-bullets, numbered lists, or multiple semicolon-separated points
+* not contain headings inside the field
 
-Interview question requirements:
+Use this structure:
+• Overall fit: ...
+• Strongest evidence: ...
+• Main gap: ...
+• Impact evidence: ...
 
-Generate exactly 4 difficult, standalone, resume-specific questions.
-Each question must be complete by itself and must not be labelled as a follow-up.
-Do not use the words:
-* follow-up
-* follow up
-* probe
-* tell me about
-* describe your experience generally
+For "Impact evidence", adapt to the role:
 
-Each question must test deep understanding of actual resume evidence:
-* implementation choices
-* architecture/design tradeoffs
-* debugging or failure handling
-* performance/scalability/quality constraints
-* exact ownership and contribution
-* measurable impact validation
-* limitations and what the candidate would improve now
+* Software/Data/Product: systems built, users, latency, accuracy, reliability, dashboards, experiments, scale, adoption, measurable outcomes.
+* Business Analyst/Operations: requirements, stakeholders, processes, KPIs, reporting, UAT, process improvements, cost/time savings.
+* Recruiter/HR: sourcing volume, screening, hiring pipeline, time-to-fill, candidate experience, onboarding, HR operations, employee engagement.
+* Sales/Marketing: leads, conversion, campaigns, revenue, CRM, funnel metrics, CTR/CPC/ROAS, client acquisition.
+* Finance: financial modeling, forecasting, budgeting, variance analysis, reporting accuracy, cost/revenue impact.
+* UX/Design: user research, usability findings, prototypes, design systems, accessibility, user flows, product impact.
+* General roles: ownership, scope, stakeholders, deliverables, outcomes, tools, and measurable impact where evidenced.
 
-Each question must reference a concrete resume/JD signal:
+If evidence is missing, say it is not clearly evidenced. Do not invent metrics.
+
+2. tailoredResumeSuggestions
+
+Visible Android title will be "Resume Improvement Suggestions". Do not include any section heading inside this field.
+
+Return exactly 4 bullets maximum.
+
+Rules:
+
+* Mix resume improvements and JD-gap improvements in one list.
+* If a job description is provided, include 1–2 bullets about JD requirements that are not clearly evidenced.
+* If no job description is provided, use all 4 bullets for role-relevant resume improvements.
+* Each bullet must start with "• ".
+* Each bullet must be one sentence only.
+* Do not include sub-bullets.
+* Do not use headings like "Optimized Resume Points", "Missing JD-Based Points", or "Tailored Resume Suggestions".
+* Do not invent experience, tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
+* Do not append "only if true" to every bullet.
+
+Make suggestions role-appropriate:
+
+* Software/Data: clarify implementation, architecture, testing, systems, tools, scale, measurable outcomes.
+* Business Analyst: clarify requirements gathering, stakeholder work, process mapping, UAT, KPIs, dashboards, business impact.
+* Recruiter/HR: clarify sourcing channels, screening process, hiring funnel, ATS/HRIS tools, time-to-fill, candidate or employee outcomes.
+* Sales/Marketing: clarify campaign ownership, CRM usage, funnel stage, lead/revenue impact, client segments, conversion metrics.
+* Finance: clarify model/report ownership, assumptions, variance analysis, budgeting/forecasting impact, financial decision support.
+* Operations: clarify process ownership, SOPs, vendor/supply chain work, cost/time/quality improvements.
+* UX/Product: clarify research method, user problem, design decision, prototype/testing, product/user impact.
+
+3. interviewQuestions
+
+Generate exactly 4 difficult, standalone, resume-specific interview questions.
+
+Questions must be hard to answer without real experience, but they must be appropriate for the target role.
+
+Each question must reference at least one concrete resume/JD signal:
+
 * project
+* role responsibility
 * tool
-* technology
+* skill
 * metric
-* responsibility
-* system
+* stakeholder
+* process
+* campaign
+* hiring pipeline
+* financial model
+* dashboard/report
+* user research/design artifact
+* system/product/process
 * JD requirement
 
-Questions should be hard to answer without real experience.
-Avoid generic behavioral questions.
+Do not ask generic questions such as:
+
+* Tell me about yourself.
+* Why this role?
+* What are your strengths/weaknesses?
+* What would you do in the first 30 days?
+* Generic teamwork/conflict questions.
+* Generic behavioral questions.
+
+Do not label questions as follow-up, probe, or behavioral.
+
+For technical roles, prefer questions about:
+
+* implementation choices
+* architecture/design tradeoffs
+* debugging decisions
+* performance/scalability/quality constraints
+* exact contribution
+* limitations and future improvements
+
+For business analyst roles, prefer questions about:
+
+* how requirements were gathered and validated
+* stakeholder conflicts or tradeoffs tied to a specific project
+* KPI/report/dashboard design decisions
+* UAT or acceptance criteria
+* process improvement impact
+* how business value was measured
+
+For recruiter/HR roles, prefer questions about:
+
+* sourcing strategy and channel choice
+* screening criteria and candidate quality
+* funnel metrics and time-to-fill
+* stakeholder or hiring manager alignment
+* ATS/HRIS workflow decisions
+* candidate or employee experience outcomes
+
+For sales/marketing roles, prefer questions about:
+
+* campaign/funnel decisions
+* target audience or lead qualification
+* CRM/process ownership
+* conversion/revenue impact
+* A/B testing or channel tradeoffs
+* how success was measured
+
+For finance roles, prefer questions about:
+
+* model assumptions
+* variance drivers
+* forecast accuracy
+* budget tradeoffs
+* reporting decisions
+* business recommendation impact
+
+For operations roles, prefer questions about:
+
+* process bottlenecks
+* SOP or workflow design
+* vendor/supply chain decisions
+* quality/cost/time tradeoffs
+* root-cause analysis
+* measurable process improvement
+
+For UX/product roles, prefer questions about:
+
+* user research method
+* design tradeoffs
+* prioritization
+* prototype/testing decisions
+* product metric impact
+* handling ambiguous user feedback
 
 Return questions only in this exact format:
-
 Q1. ...
 Q2. ...
 Q3. ...
 Q4. ...
 
-Do not include any answer guidance.
+Do not include answers, hints, "Based on", "Strong answer should mention", "Why this may be asked", or "Follow-up probe".
 
-Use this JSON shape:
+4. bulletRewriteSuggestions
 
+Return null.
+
+Rules:
+
+* Use only evidence present in the resume and job description.
+* Do not say skills are "implicit", "likely", "assumed", or "probably present".
+* If a JD skill is missing, say it is missing or not clearly evidenced.
+* Do not invent tools, frameworks, skills, metrics, responsibilities, companies, achievements, or architecture.
+* Do not use "AI-driven", "LLM-powered", "machine learning", or "automated" unless resume explicitly supports it.
+* Do not invent exact metrics.
+* Use placeholders only if needed: [X%], [number], [hours], [amount].
+* Return valid JSON only.
+
+Return JSON exactly in this Android-compatible shape:
 {
-"advancedReview": "• ...\n• ...\n• ...\n• ...",
+"advancedReview": "• Overall fit: ...\n• Strongest evidence: ...\n• Main gap: ...\n• Impact evidence: ...",
 "tailoredResumeSuggestions": "• ...\n• ...\n• ...\n• ...",
 "interviewQuestions": "Q1. ...\nQ2. ...\nQ3. ...\nQ4. ...",
 "bulletRewriteSuggestions": null,
 "error": null
 }
-
-Rules:
-
-* Use only evidence present in the resume and job description.
-* Do not invent tools, frameworks, metrics, responsibilities, companies, achievements, or architecture.
-* If a JD skill is missing, say it is not clearly evidenced.
-* Do not repeat “only if true” after every bullet.
-* Do not use “AI-driven”, “LLM-powered”, “machine learning”, or “automated” unless resume explicitly supports it.
-* Use placeholders only if needed: [X%], [number], [hours], [amount].
-* Return valid JSON only.
 
 Job description:
 ${jobSpecification || 'Not provided'}

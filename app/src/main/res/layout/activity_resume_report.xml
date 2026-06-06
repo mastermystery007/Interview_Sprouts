@@ -272,7 +272,7 @@
             android:background="@drawable/bg_locked_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
-            android:text="Detailed heuristic analysis is locked. Watch an ad to unlock the full report tabs."
+            android:text="Gold Star Analysis is locked. Watch an ad to unlock category breakdown, gaps, keywords, and JD matching."
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
@@ -282,7 +282,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Watch Ad to Unlock Full Report" />
+            android:text="Watch Ad to Unlock Gold Star Analysis" />
 
         <TextView
             android:id="@+id/textFullReport"
@@ -341,7 +341,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Watch Ad to Unlock Advanced AI Review"
+            android:text="Watch Ad to Unlock Diamond Star Analysis"
             android:visibility="gone" />
 
         <TextView

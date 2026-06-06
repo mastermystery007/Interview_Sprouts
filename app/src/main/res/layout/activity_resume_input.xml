@@ -172,7 +172,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:text="Privacy: advanced AI review sends resume text and JD to our backend only after the second unlock."
+            android:text="Privacy: Diamond Star analysis sends resume text and JD to our backend only after the second unlock."
             android:textColor="#64748B"
             android:textSize="12sp" />
 

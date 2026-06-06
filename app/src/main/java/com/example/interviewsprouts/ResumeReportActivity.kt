@@ -70,7 +70,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
         findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
         findViewById<TextView>(R.id.textAdvancedLockedMessage).text =
-            "Advanced AI review with resume improvement suggestions and detailed resume-based interview questions is locked. Watch another ad to unlock.\n\nAdvanced AI review sends your resume text and job description to our backend only after this second unlock."
+            "Diamond Star Analysis with resume improvement suggestions and resume-specific interview questions is locked. Watch another ad to unlock.\n\nDiamond Star analysis sends your resume text and job description to our backend only after this second unlock."
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
 
         tabOverview = findViewById(R.id.tabOverview)
@@ -138,7 +138,7 @@ class ResumeReportActivity : AppCompatActivity() {
         btnUnlockAdvancedLlmReview.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Simulated Ad")
-                .setMessage("In the real app, another rewarded ad will unlock the Advanced AI Review. For now, tap Continue to unlock.")
+                .setMessage("In the real app, another rewarded ad will unlock the Diamond Star Analysis. For now, tap Continue to unlock.")
                 .setPositiveButton("Continue") { _, _ ->
                     textAdvancedLlmReview.visibility = View.VISIBLE
                     startAdvancedLoadingAnimation(textAdvancedLlmReview)
@@ -162,7 +162,7 @@ class ResumeReportActivity : AppCompatActivity() {
         advancedLoadingRunnable = object : Runnable {
             override fun run() {
                 val dots = ".".repeat(advancedLoadingDotCount)
-                textView.text = "Generating Advanced AI Review$dots"
+                textView.text = "Generating Diamond Star Analysis$dots"
                 advancedLoadingDotCount = (advancedLoadingDotCount + 1) % 4
                 advancedLoadingHandler.postDelayed(this, 500L)
             }
@@ -248,7 +248,7 @@ class ResumeReportActivity : AppCompatActivity() {
         val questions = compactQuestions(response.interviewQuestions)
 
         if (advancedReview.isNotBlank()) {
-            sections.add("Advanced AI Review\n$advancedReview")
+            sections.add("Diamond Star Analysis\n$advancedReview")
         }
         if (suggestions.isNotBlank()) {
             sections.add("Resume Improvement Suggestions\n$suggestions")
@@ -263,7 +263,7 @@ class ResumeReportActivity : AppCompatActivity() {
     }
 
     private fun compactAdvancedReview(text: String?): String {
-        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review", "Advanced Review")
+        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Diamond Star Analysis", "Advanced AI Review", "Advanced Review", "AI Review")
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val items = extractBulletLikeItems(cleaned, splitSemicolons = true)
@@ -276,24 +276,31 @@ class ResumeReportActivity : AppCompatActivity() {
     }
 
     private fun compactSuggestions(text: String?): String {
-        val cleaned = stripDuplicateSectionHeading(
-            text.orEmpty(),
-            "Optimized Resume Points + Missing JD-Based Points",
-            "Optimized Resume Points",
-            "Missing JD-Based Points",
-            "Tailored Resume Suggestions",
-            "Resume Improvement Suggestions",
-            "Add suggested skills or tools only if they are true."
-        )
+        val cleaned = removeLegacySuggestionHeadings(text.orEmpty())
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val items = extractBulletLikeItems(cleaned, splitSemicolons = false)
-            .map { sanitizeSuggestionBullet(it) }
+            .map { sanitizeSuggestionBullet(removeLegacySuggestionHeadings(it)) }
             .filter { it.isNotBlank() && !isNullLiteral(it) && !looksLikeStandaloneHeading(it) && !isRemovedAdvancedLine(it) }
             .distinctBy { it.lowercase() }
             .take(4)
 
         return items.joinToString("\n") { "• $it" }
+    }
+
+    private fun removeLegacySuggestionHeadings(text: String): String {
+        var cleaned = text
+        listOf(
+            "Optimized Resume Points + Missing JD-Based Points",
+            "Optimized Resume Points",
+            "Missing JD-Based Points",
+            "Tailored Resume Suggestions",
+            "Resume Improvement Suggestions"
+        ).forEach { heading ->
+            cleaned = cleaned.replace(Regex("""(?im)^\s*""" + Regex.escape(heading) + """\s*[:：-]?\s*$"""), "")
+            cleaned = cleaned.replace(Regex("(?i)" + Regex.escape(heading) + """\s*[:：-]\s*"""), "")
+        }
+        return cleaned.trim()
     }
 
     private fun compactQuestions(text: String?): String {
@@ -319,16 +326,22 @@ class ResumeReportActivity : AppCompatActivity() {
     private fun extractBulletLikeItems(text: String, splitSemicolons: Boolean): List<String> {
         val normalized = text
             .replace("\r", "\n")
-            .replace(Regex("""(?<!^)\s+[•▪◦]\s*"""), "\n• ")
-            .replace(Regex("""(?i)(?<!^)\s+(?=\d+[.)]\s+)"""), "\n")
+            .replace(Regex("""\s*[•▪◦]\s*"""), "\n• ")
+            .replace(Regex("""(?m)(?<!^)\s+(?=\d+[.)]\s+)"""), "\n")
             .replace(Regex("""\s+-\s+"""), "\n")
+
+        val splitPattern = if (splitSemicolons) {
+            Regex("""\s*(?:;|[•▪◦]|\b\d+[.)])\s*""")
+        } else {
+            Regex("""\s*(?:[•▪◦]|\b\d+[.)])\s*""")
+        }
 
         val lineItems = normalized.lines()
             .map { normalizeVisibleLine(it) }
             .filter { it.isNotBlank() && !looksLikeStandaloneHeading(it) }
             .flatMap { line ->
                 val base = line.trim().trimStart('-', '*', '•', '▪', '◦').replace(Regex("""^\d+[.)]\s*"""), "").trim()
-                if (splitSemicolons) base.split(Regex(""";\s*""")) else listOf(base)
+                base.split(splitPattern)
             }
             .map { it.trim() }
             .filter { it.isNotBlank() }
@@ -339,7 +352,7 @@ class ResumeReportActivity : AppCompatActivity() {
     private fun sanitizeAdvancedBullet(text: String): String {
         val withoutNestedMarkers = text
             .replace(Regex("[•▪◦]+"), " ")
-            .replace(Regex("""\b[1-4][.)]\s*"""), " ")
+            .replace(Regex("""\b\d+[.)]\s*"""), " ")
             .replace(Regex("""\s+-\s+"""), " ")
             .replace(Regex("""\s+"""), " ")
             .trim()
@@ -363,9 +376,16 @@ class ResumeReportActivity : AppCompatActivity() {
 
     private fun sanitizeQuestion(text: String): String? {
         var question = text.trim().trimStart('-', '*', '•').replace(Regex("""^(?:Q\d+\.|\d+[.)])\s*""", RegexOption.IGNORE_CASE), "").trim()
-        question = question.replace(Regex("""^(?:Follow[- ]?up|Probe)\s*[:：-]\s*""", RegexOption.IGNORE_CASE), "").trim()
-        if (Regex("""\b(follow[- ]?up|probe)\b""", RegexOption.IGNORE_CASE).containsMatchIn(question)) return null
-        question = question.substringBefore("Strong answer should mention", question).substringBefore("Suggested answer", question).substringBefore("Answer:", question).substringBefore("Hint:", question).trim()
+        question = question.replace(Regex("""^(?:Follow[- ]?up|Follow up|Probe|Behavioral)\s*[:：-]\s*""", RegexOption.IGNORE_CASE), "").trim()
+        question = question
+            .substringBefore("Strong answer should mention", question)
+            .substringBefore("Suggested answer", question)
+            .substringBefore("Why this may be asked", question)
+            .substringBefore("Based on", question)
+            .substringBefore("Answer:", question)
+            .substringBefore("Hint:", question)
+            .trim()
+        if (Regex("""\b(follow[- ]?up|probe|behavioral)\b""", RegexOption.IGNORE_CASE).containsMatchIn(question)) return null
         if (!question.endsWith("?")) return null
         return question
     }
@@ -412,13 +432,15 @@ class ResumeReportActivity : AppCompatActivity() {
 
     private fun isRemovedQuestionLine(line: String): Boolean =
         Regex(
-            """^(Strong answer should mention|Based on|Why this may be asked|Follow[- ]?up probe|Follow[- ]?up|Probe|Answer|Suggested answer|Hint)\b""",
+            """^(Strong answer should mention|Based on|Why this may be asked|Follow[- ]?up probe|Follow[- ]?up|Probe|Behavioral|Answer|Suggested answer|Hint)\b""",
             RegexOption.IGNORE_CASE
         ).containsMatchIn(line.trim())
 
     private fun looksLikeStandaloneHeading(line: String): Boolean = listOf(
+        "Diamond Star Analysis",
         "Advanced AI Review",
         "Advanced Review",
+        "AI Review",
         "Metric Evidence Detected",
         "Optimized Resume Points",
         "Missing JD-Based Points",
@@ -461,10 +483,10 @@ class ResumeReportActivity : AppCompatActivity() {
             "JD Keywords Missing:",
             "JD-specific missing points:",
             "JD keywords already evidenced:",
-            "Advanced AI Review",
+            "Gold Star Analysis",
+            "Diamond Star Analysis",
             "Resume Improvement Suggestions",
             "Resume-Specific Interview Questions",
-            "Full Heuristic Analysis",
             "Category Findings:"
         )
         headings.forEach { heading ->
@@ -555,7 +577,7 @@ class ResumeReportActivity : AppCompatActivity() {
         }.trim()
 
         return """
-Advanced AI Review
+Diamond Star Analysis
 ${compactAdvancedReview(advanced)}
 
 Resume Improvement Suggestions
@@ -693,7 +715,7 @@ ${foundJdKeywords.take(10).joinToString("\n") { "• $it" }.ifBlank { "• No cl
         }
 
         val fullReport = """
-Full Heuristic Analysis
+Gold Star Analysis
 
 Category Findings:
 • Keyword Match: ${scoreRatingLabel(keywordMatchScore)} — Found ${foundKeywords.size} of ${combinedKeywords.size} expected role/JD keywords.
