@@ -95,7 +95,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:ellipsize="none"
+                        android:includeFontPadding="true"
                         android:maxLines="2"
+                        android:singleLine="false"
                         android:textColor="#111111"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -188,6 +190,15 @@
         </LinearLayout>
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Quick Review"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/textBasicFeedback"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -247,7 +258,7 @@
                 <TextView
                     android:id="@+id/tabBespoke"
                     style="@style/ResumeReportTab"
-                    android:text="Bespoke" />
+                    android:text="JD Match" />
             </LinearLayout>
         </HorizontalScrollView>
 
@@ -265,14 +276,30 @@
             android:visibility="gone" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Unlock Detailed Analysis"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/textLockedReportMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:background="@drawable/bg_locked_card"
+            android:background="@drawable/bg_locked_ad_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
-            android:text="Gold Star Analysis is locked. Watch an ad to unlock category breakdown, gaps, keywords, and JD matching."
+            android:text="Unlock Detailed Analysis
+
+Watch an ad to unlock:
+• Strengths
+• Gaps
+• Keyword match
+• Section scores
+• JD match if attached"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
@@ -282,7 +309,17 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Watch Ad to Unlock Gold Star Analysis" />
+            android:text="Watch Ad to Unlock Detailed Analysis" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:id="@+id/headerDetailedAnalysis"
+            android:text="Detailed Analysis"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textFullReport"
@@ -324,11 +361,21 @@
             android:visibility="gone" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:id="@+id/headerUnlockAdvanced"
+            android:text="Unlock Advanced AI Review"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
             android:id="@+id/textAdvancedLockedMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:background="@drawable/bg_locked_card"
+            android:background="@drawable/bg_advanced_locked_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
             android:textColor="#111111"
@@ -341,8 +388,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Watch Ad to Unlock Diamond Star Analysis"
+            android:text="Watch Ad to Unlock Advanced AI Review"
             android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:id="@+id/headerAdvancedReview"
+            android:text="Advanced AI Review"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textAdvancedLlmReview"
@@ -356,6 +413,15 @@
             android:textIsSelectable="true"
             android:textSize="15sp"
             android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Save Report"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textLocalSaveNote"
