@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.interviewsprouts"
+        applicationId = "mysterybox.interviewsprout"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
