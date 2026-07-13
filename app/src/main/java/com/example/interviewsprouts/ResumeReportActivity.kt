@@ -479,7 +479,19 @@ class ResumeReportActivity : AppCompatActivity() {
             "Diamond Star Analysis",
             "Resume Improvement Suggestions",
             "Resume-Specific Interview Questions",
-            "Category Findings:"
+            "Category Findings:",
+            "Candidate Positioning:",
+            "World-Class Scorecard:",
+            "JD Gap Severity:",
+            "Evidence Quality:",
+            "Recruiter Red Flags:",
+            "Priority Fixes:",
+            "High-priority JD signals:",
+            "Best placement:",
+            "Gap severity:",
+            "Bullet quality issues:",
+            "Main hiring concern:",
+            "Archetype:"
         )
         headings.forEach { heading ->
             applySpanToMatches(text, heading) { start, end ->
@@ -489,8 +501,14 @@ class ResumeReportActivity : AppCompatActivity() {
 
         val positiveColor = Color.rgb(24, 128, 82)
         val gapColor = Color.rgb(190, 82, 32)
-        val positiveSignals = listOf("Found keywords:", "Role Keywords Found:", "JD Keywords Found:", "Strong evidence", "Excellent", "Good")
-        val gapSignals = listOf("Missing keywords:", "Role Keywords Missing:", "JD Keywords Missing:", "Weak bullets:", "Missing measurable impact:", "Main gap", "Low", "Lacking", "Needs Improvement")
+        val positiveSignals = listOf(
+            "Found keywords:", "Role Keywords Found:", "JD Keywords Found:", "Strong evidence", "Excellent", "Good",
+            "Best proof:", "Strongest evidence:", "Clearly evidenced", "Proof signal"
+        )
+        val gapSignals = listOf(
+            "Missing keywords:", "Role Keywords Missing:", "JD Keywords Missing:", "Weak bullets:", "Missing measurable impact:", "Main gap", "Low", "Lacking", "Needs Improvement",
+            "High:", "Main hiring concern:", "Interview risk:", "Recruiter Red Flags:", "Not clearly evidenced"
+        )
         positiveSignals.forEach { signal ->
             applySpanToMatches(text, signal) { start, end ->
                 builder.setSpan(ForegroundColorSpan(positiveColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -597,7 +615,21 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val foundKeywords = combinedKeywords.filter { resumeLower.contains(it.lowercase()) }
         val missingKeywords = combinedKeywords.filterNot { resumeLower.contains(it.lowercase()) }
 
+        val archetype = detectResumeArchetype(resumeText, targetRole, jobSpecification)
+        val jdPrioritySignals = extractJdPrioritySignals(jobSpecification)
+        val gapSeverity = rankGapSeverity(resumeText, targetRole, jobSpecification)
+        val recruiterRedFlags = detectRecruiterRedFlags(resumeText, targetRole, experienceLevel, jobSpecification)
+        val atsParserRisks = detectAtsParserRisks(resumeText)
+        val bulletQualityIssues = diagnoseBulletQuality(resumeText)
+        val impactSignals = extractImpactSignals(resumeText)
+        val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
+        val vaguePhrases = detectVaguePhrases(resumeText)
+        val genericClaims = detectGenericClaims(resumeText)
+        val responsibilityNoOutcome = detectResponsibilityWithoutOutcome(resumeText)
+        val missingRoleEvidence = detectMissingRoleEvidence(resumeText, targetRole, jobSpecification)
+
         val keywordMatchScore = calculateKeywordMatchScore(foundKeywords.size, combinedKeywords.size)
+        val evidenceConfidenceScore = calculateEvidenceConfidenceScore(resumeText, targetRole, jobSpecification)
         val measurableImpactScore = calculateMeasurableImpactScore(resumeText)
         val actionVerbScore = calculateStrongActionVerbScore(resumeText)
         val sectionClarityScore = calculateSectionClarityScore(resumeText)
@@ -754,7 +786,7 @@ Priority Fixes:
 
         return ResumeReportResult(
             overallScore, keywordMatchScore, measurableImpactScore, actionVerbScore, sectionClarityScore,
-            roleRelevanceScore, foundKeywords, missingKeywords, basicFeedback, missingKeywordsHook, fullReport,
+            evidenceConfidenceScore, foundKeywords, missingKeywords, basicFeedback, missingKeywordsHook, fullReport,
             overview, strengths, gaps, keywords, bespoke
         )
     }
