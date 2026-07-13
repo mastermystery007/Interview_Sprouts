@@ -105,47 +105,44 @@ app.post('/api/analyze-resume', async (req, res) => {
 });
 
 function buildPrompt({ resumeText, targetRole, experienceLevel, jobSpecification }) {
-  return `Analyze this resume like a premium recruiter and resume consultant using only evidence present in the resume and job description.
+  return `Analyze this resume for the target role using only evidence present in the resume and job description.
 
 Target role: ${targetRole}
 Experience level: ${experienceLevel}
 Job description provided: ${jobSpecification ? 'yes' : 'no'}
 
-Return valid JSON only. No markdown code fences. Keep the output short, diagnostic, recruiter-like, bespoke, and mobile-friendly.
+Return valid JSON only. No markdown code fences. Keep the output short, direct, recruiter-like, and mobile-friendly.
 
-Role-specific evaluation lens:
-- Software/Data: systems, tools, architecture, scale, debugging, metrics, deployment, reliability.
-- Business/Ops: requirements, stakeholders, process, KPIs, UAT, workflow improvement, measurable savings.
-- HR/Recruiting: sourcing, screening, funnel, ATS/HRIS, hiring-manager alignment, candidate experience.
-- Sales/Marketing: funnel, CRM, ICP, campaigns, conversion, revenue, channel tradeoffs.
-- Finance: models, assumptions, variance, forecast accuracy, budget/revenue impact.
-- Product/UX: research, prioritization, tradeoffs, prototypes, usability, product metrics.
-- Research/Academic: research question, methods, experiments, rigor, publications/projects, reproducibility.
-- General roles: ownership, scope, stakeholders, tools/methods, deliverables, and outcomes.
-Do not assume a technical role unless target role/JD/resume supports it.
+Role coverage:
+- Support software, data, business analyst, recruiter, HR, sales, marketing, finance, operations, product, UX/design, and general business roles.
+- Adapt to the actual target role, resume, and JD.
+- Do not assume a technical role unless target role/JD/resume supports it.
 
-Quality rules:
-- Use only resume/JD evidence; do not fabricate missing skills, tools, numbers, companies, responsibilities, certifications, or achievements.
-- If a JD requirement is not evidenced, say "not clearly evidenced".
-- If JD is provided, every suggestion must be influenced by the JD.
-- If JD includes must-have or required signals, prioritize those first.
-- No generic advice, no long paragraphs, no filler, no markdown, no answers or hints.
-- Total visible output must be exactly 12 items: 4 review bullets + 4 suggestion bullets + 4 questions.
+Global rules:
+- Use only resume/JD evidence; do not invent experience, tools, metrics, responsibilities, companies, or achievements.
+- If evidence is missing, say it is not clearly evidenced.
+- No generic advice, no filler, no long paragraphs.
+- Total visible AI report maximum is exactly 12 items: 4 review bullets + 4 suggestion bullets + 4 questions.
 - Always set bulletRewriteSuggestions to null.
 
 1. advancedReview:
-Return exactly 4 bullet lines, each starting with "• ". Each bullet must be one short diagnostic sentence.
-Use exactly this structure and meaning:
-• Fit thesis: judge the candidate's positioning for this JD/role in one sentence.
-• Proof signal: strongest concrete resume evidence and why it matters.
-• Gap severity: highest-impact missing or weak JD requirement and why it matters.
-• Interview risk: the hardest concern an interviewer may test.
+Return exactly 4 bullet lines, each starting with "• ". Each bullet must be one short, specific, evidence-based sentence.
+Use exactly this structure:
+• Fit thesis: one concise judgment of candidate-role fit based on resume + JD.
+• Strongest proof: strongest concrete evidence from resume.
+• Sharpest gap: most important missing or weak JD requirement; if no JD, use the target-role gap.
+• Hiring risk: one likely recruiter/interviewer concern based on missing, vague, or weak evidence.
 
 2. tailoredResumeSuggestions:
-Return exactly 4 bullet lines, each starting with "• ". Each bullet must be one sentence, practical, JD-aware, section-specific, and evidence-safe.
-Use this mental model without repeating it mechanically: change a specific section or bullet type by adding truthful evidence so it addresses a JD requirement or recruiter concern.
-Prefer suggestions that move strongest JD evidence higher, add a missing JD tool/skill only if evidenced, rewrite a task-only bullet into action + tool + scope + outcome, add quantified results where supportable, clarify ownership/level, show domain/stakeholder/process evidence, add certification/education evidence only if present, or remove vague soft-skill claims.
-Do not output a section heading inside this field.
+Return exactly 4 bullet lines, each starting with "• ". Do not include a heading inside this field.
+Rules:
+- If JD is provided, all 4 bullets should be influenced by JD.
+- If JD is provided, at least 2 bullets must directly address missing/weak JD requirements.
+- Each bullet must say what to change and where to add it: Summary, Skills, Experience, Projects, Certifications, Achievements, or Education.
+- Prefer practical edits: add a Skills keyword when truthful, rewrite a specific experience/project bullet, add a measurable result, clarify ownership/scope, move important evidence higher, or add JD tool/domain evidence.
+- Do not say "only if true" in every bullet, but do not fabricate.
+- Keep each bullet one sentence.
+- If no JD is provided, include one bullet that adding a JD would allow more custom matching.
 
 3. interviewQuestions:
 Return exactly 4 difficult questions in this format:
@@ -153,13 +150,14 @@ Q1. ...
 Q2. ...
 Q3. ...
 Q4. ...
-Each question must test a real resume claim or JD gap: ownership depth, tradeoff decisions, failure/debugging/constraint handling, measurable-result credibility, stakeholder/process judgment, tool/domain competence, or a role-specific JD scenario.
-No generic behavioral questions, no answers, no hints, and no "follow-up" wording.
+Questions only. No answers, hints, follow-up labels, or explanatory text.
+Each question must be hard to fake and reference a specific resume project, role, responsibility, tool, skill, metric, stakeholder, process, campaign, model, dashboard/report, design artifact, system/product/process, or JD requirement.
+Do not ask generic questions such as tell me about yourself, why this role, strengths/weaknesses, first 30 days, teamwork, conflict, or broad behavioral questions.
 
 4. JSON shape:
 Return exactly this Android-compatible shape:
 {
-"advancedReview": "• Fit thesis: ...\n• Proof signal: ...\n• Gap severity: ...\n• Interview risk: ...",
+"advancedReview": "• Fit thesis: ...\n• Strongest proof: ...\n• Sharpest gap: ...\n• Hiring risk: ...",
 "tailoredResumeSuggestions": "• ...\n• ...\n• ...\n• ...",
 "interviewQuestions": "Q1. ...\nQ2. ...\nQ3. ...\nQ4. ...",
 "bulletRewriteSuggestions": null,
