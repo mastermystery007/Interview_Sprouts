@@ -94,64 +94,82 @@ class ResumeReportActivity : AppCompatActivity() {
             selectTab(tabBespoke, if (isFirstAdUnlocked) report.bespokeContent else LOCKED_TAB_MESSAGE)
         }
 
-        val tabScrollContainer = findViewById<View>(R.id.tabScrollContainer)
-        val textFullReport = findViewById<TextView>(R.id.textFullReport)
-        val textUnlockedPointSuggestions =
-            findViewById<TextView>(R.id.textUnlockedPointSuggestions)
-        val textUnlockedInterviewQuestions =
-            findViewById<TextView>(R.id.textUnlockedInterviewQuestions)
+        val tabScrollContainer =
+            findViewById<View>(R.id.tabScrollContainer)
+
+        val textFullReport =
+            findViewById<TextView>(R.id.textFullReport)
+
         val textLockedReportMessage =
             findViewById<TextView>(R.id.textLockedReportMessage)
+
         val textAdvancedLockedMessage =
             findViewById<TextView>(R.id.textAdvancedLockedMessage)
+
         val textAdvancedLlmReview =
             findViewById<TextView>(R.id.textAdvancedLlmReview)
+
         val btnUnlockFullReport =
             findViewById<Button>(R.id.btnUnlockFullReport)
+
         val btnUnlockAdvancedLlmReview =
             findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
 
         val headerUnlockDetailed =
             findViewById<TextView>(R.id.headerUnlockDetailed)
+
         val headerDetailedAnalysis =
             findViewById<TextView>(R.id.headerDetailedAnalysis)
+
         val headerUnlockAdvanced =
             findViewById<TextView>(R.id.headerUnlockAdvanced)
+
         val headerAdvancedReview =
             findViewById<TextView>(R.id.headerAdvancedReview)
 
-        textUnlockedPointSuggestions.visibility = View.GONE
-        textUnlockedInterviewQuestions.visibility = View.GONE
-        val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
-        val textAdvancedLockedMessage = findViewById<TextView>(R.id.textAdvancedLockedMessage)
-        val textAdvancedLlmReview = findViewById<TextView>(R.id.textAdvancedLlmReview)
-        val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
-        val btnUnlockAdvancedLlmReview = findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
+        headerUnlockDetailed.visibility = View.VISIBLE
+        textLockedReportMessage.visibility = View.VISIBLE
+        btnUnlockFullReport.visibility = View.VISIBLE
 
+        headerDetailedAnalysis.visibility = View.GONE
         tabScrollContainer.visibility = View.GONE
         textTabContent.visibility = View.GONE
         textFullReport.visibility = View.GONE
-        textLockedReportMessage.visibility = View.VISIBLE
-        btnUnlockFullReport.visibility = View.VISIBLE
-        
+
+        headerUnlockAdvanced.visibility = View.GONE
+        textAdvancedLockedMessage.visibility = View.GONE
+        btnUnlockAdvancedLlmReview.visibility = View.GONE
+
+        headerAdvancedReview.visibility = View.GONE
+        textAdvancedLlmReview.visibility = View.GONE
+
         btnUnlockFullReport.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Unlock Gold Star Analysis")
-                .setMessage("Watch a short ad to unlock the complete category breakdown, JD gap severity, and evidence quality analysis.")
+                .setMessage(
+                    "Watch a short ad to unlock detailed section scores, " +
+                        "strengths, improvements, keyword matching, and JD matching."
+                )
                 .setPositiveButton("Watch Ad") { _, _ ->
                     isFirstAdUnlocked = true
-                    textLockedReportMessage.text = "Gold Star Analysis Unlocked"
-                    textLockedReportMessage.setBackgroundResource(R.drawable.bg_unlocked_card)
-                    
+
+                    headerUnlockDetailed.visibility = View.GONE
+                    textLockedReportMessage.visibility = View.GONE
+                    btnUnlockFullReport.visibility = View.GONE
+
+                    headerDetailedAnalysis.visibility = View.VISIBLE
                     tabScrollContainer.visibility = View.VISIBLE
                     textTabContent.visibility = View.VISIBLE
                     textFullReport.visibility = View.VISIBLE
-                    btnUnlockFullReport.visibility = View.GONE
-                    
+
+                    headerUnlockAdvanced.visibility = View.VISIBLE
                     textAdvancedLockedMessage.visibility = View.VISIBLE
                     btnUnlockAdvancedLlmReview.visibility = View.VISIBLE
-                    
-                    selectTab(tabOverview, report.overviewContent)
+
+                    selectTab(
+                        tabOverview,
+                        report.overviewContent
+                    )
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -160,17 +178,31 @@ class ResumeReportActivity : AppCompatActivity() {
         btnUnlockAdvancedLlmReview.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Unlock Diamond Star Analysis")
-                .setMessage("Watch another ad to unlock deep AI suggestions and resume-specific interview questions.")
+                .setMessage(
+                    "Watch another ad to unlock compressed AI resume suggestions " +
+                        "and resume-specific interview questions."
+                )
                 .setPositiveButton("Watch Ad") { _, _ ->
                     isSecondAdUnlocked = true
-                    textAdvancedLlmReview.visibility = View.VISIBLE
-                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
+
+                    headerUnlockAdvanced.visibility = View.GONE
                     textAdvancedLockedMessage.visibility = View.GONE
                     btnUnlockAdvancedLlmReview.visibility = View.GONE
-                    textAdvancedLlmReview.visibility = View.VISIBLE
+
                     headerAdvancedReview.visibility = View.VISIBLE
-                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
-                    requestAdvancedAiReview(resumeText, targetRole, experienceLevel, jobSpecification, textAdvancedLlmReview)
+                    textAdvancedLlmReview.visibility = View.VISIBLE
+
+                    startAdvancedLoadingAnimation(
+                        textAdvancedLlmReview
+                    )
+
+                    requestAdvancedAiReview(
+                        resumeText,
+                        targetRole,
+                        experienceLevel,
+                        jobSpecification,
+                        textAdvancedLlmReview
+                    )
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -182,16 +214,27 @@ class ResumeReportActivity : AppCompatActivity() {
         }
     }
 
-    private fun startAdvancedLoadingAnimation(textView: TextView) {
+    private fun startAdvancedLoadingAnimation(
+        textView: TextView
+    ) {
         stopAdvancedLoadingAnimation()
         advancedLoadingDotCount = 0
 
         advancedLoadingRunnable = object : Runnable {
             override fun run() {
-                val dots = ".".repeat(advancedLoadingDotCount)
-                textView.text = "Generating Advanced AI Review$dots"
-                advancedLoadingDotCount = (advancedLoadingDotCount + 1) % 4
-                advancedLoadingHandler.postDelayed(this, 500L)
+                val dots =
+                    ".".repeat(advancedLoadingDotCount + 1)
+
+                textView.text =
+                    "Generating Diamond Star Analysis$dots"
+
+                advancedLoadingDotCount =
+                    (advancedLoadingDotCount + 1) % 3
+
+                advancedLoadingHandler.postDelayed(
+                    this,
+                    500L
+                )
             }
         }
 
@@ -268,30 +311,53 @@ class ResumeReportActivity : AppCompatActivity() {
     ): String {
         val sections = mutableListOf<String>()
 
-        val advancedReview = compactAdvancedReview(response.advancedReview)
-        val suggestions = compactSuggestions(response.tailoredResumeSuggestions)
-        val questions = compactQuestions(response.interviewQuestions)
+        val advancedReview =
+            compactAdvancedReview(response.advancedReview)
+
+        val suggestions =
+            compactSuggestions(
+                response.tailoredResumeSuggestions
+            )
+
+        val questions =
+            compactQuestions(response.interviewQuestions)
 
         if (advancedReview.isNotBlank()) {
-            sections.add("Advanced AI Review\n$advancedReview")
+            sections.add(
+                "Diamond Star Analysis\n$advancedReview"
+            )
         }
 
         if (suggestions.isNotBlank()) {
-            sections.add("Resume Improvement Suggestions\n$suggestions")
+            sections.add(
+                "Resume Improvement Suggestions\n$suggestions"
+            )
         }
 
         if (questions.isNotBlank()) {
-            sections.add("Resume-Specific Interview Questions\n$questions")
+            sections.add(
+                "Resume-Specific Interview Questions\n$questions"
+            )
         }
 
         return sections.joinToString("\n\n").ifBlank {
-            "AI backend returned no usable content. Showing offline fallback.\n\n" +
-                offlineFallback.substringAfter("\n\n", offlineFallback)
+            "AI backend returned no usable content. " +
+                "Showing offline fallback.\n\n" +
+                offlineFallback.substringAfter(
+                    "\n\n",
+                    offlineFallback
+                )
         }
     }
 
     private fun compactAdvancedReview(text: String?): String {
-        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review", "Advanced Review", "AI Review")
+        val cleaned = stripDuplicateSectionHeading(
+            text.orEmpty(),
+            "Diamond Star Analysis",
+            "Advanced AI Review",
+            "Advanced Review",
+            "AI Review"
+        )
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val items = extractBulletLikeItems(cleaned, splitSemicolons = true)
@@ -455,7 +521,10 @@ class ResumeReportActivity : AppCompatActivity() {
             RegexOption.IGNORE_CASE
         ).containsMatchIn(line.trim())
 
-    private fun looksLikeStandaloneHeading(line: String): Boolean = listOf(
+    private fun looksLikeStandaloneHeading(
+        line: String
+    ): Boolean = listOf(
+        "Diamond Star Analysis",
         "Advanced AI Review",
         "Advanced Review",
         "AI Review",
@@ -466,7 +535,9 @@ class ResumeReportActivity : AppCompatActivity() {
         "Optional Resume Point Rewrites / cleanup notes",
         "Tailored Resume Suggestions",
         "Resume Improvement Suggestions"
-    ).any { isSectionHeadingLine(line, it) }
+    ).any { heading ->
+        isSectionHeadingLine(line, heading)
+    }
 
     private fun isSectionHeadingLine(line: String, heading: String): Boolean =
         line.trim().trimEnd(':', '：', '-', '–').trim().equals(heading, ignoreCase = true)
@@ -497,9 +568,21 @@ class ResumeReportActivity : AppCompatActivity() {
             "JD-specific missing points:",
             "JD keywords already evidenced:",
             "Detailed Analysis",
-            "Advanced AI Review",
-            "Resume Improvement Suggestions",
-            "Resume-Specific Interview Questions",
+            "Diamond Star Analysis",
+            "Gold Star Overview",
+            "Section Scores",
+            "Role Fit",
+            "Resume Evidence",
+            "JD Match",
+            "Resume Structure",
+            "Priority Fixes",
+            "Strengths",
+            "Gaps",
+            "Keywords",
+            "Biggest improvement:",
+            "Experience level match:",
+            "Main evidence weakness:",
+            "Main structure concern:",
             "Category Findings:",
             "Role Fit:",
             "World-Class Scorecard:",
@@ -613,7 +696,7 @@ class ResumeReportActivity : AppCompatActivity() {
         }.trim()
 
         return """
-Advanced AI Review
+Diamond Star Analysis
 ${compactAdvancedReview(advanced)}
 
 Resume Improvement Suggestions
@@ -641,9 +724,8 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val foundKeywords = combinedKeywords.filter { resumeLower.contains(it.lowercase()) }
         val missingKeywords = combinedKeywords.filterNot { resumeLower.contains(it.lowercase()) }
 
-        val gapSeverity = rankGapSeverity(resumeText, targetRole, jobSpecification)
-        val recruiterRedFlags = detectRecruiterRedFlags(resumeText, targetRole, experienceLevel, jobSpecification)
-        val atsParserRisks = detectAtsParserRisks(resumeText)
+        val atsParserRisks =
+            detectAtsParserRisks(resumeText)
         val impactSignals = extractImpactSignals(resumeText)
         val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
         val vaguePhrases = detectVaguePhrases(resumeText)
@@ -651,35 +733,83 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val responsibilityNoOutcome = detectResponsibilityWithoutOutcome(resumeText)
         val missingRoleEvidence = detectMissingRoleEvidence(resumeText, targetRole, jobSpecification)
 
-        val keywordMatchScore = calculateKeywordMatchScore(foundKeywords.size, combinedKeywords.size)
-        val measurableImpactScore = calculateMeasurableImpactScore(resumeText)
-        val actionVerbScore = calculateStrongActionVerbScore(resumeText)
-        val sectionClarityScore = calculateSectionClarityScore(resumeText)
-        val roleRelevanceScore = calculateRoleRelevanceScore(keywordMatchScore, sectionClarityScore, jobSpecification.isNotBlank())
-        val seniorityAlignmentScore = calculateSeniorityAlignmentScore(resumeText, experienceLevel)
-        val evidenceDensityScore = calculateEvidenceDensityScore(resumeText)
-        val specificityScore = calculateSpecificityScore(resumeText)
-        val atsReadabilityScore = calculateAtsReadabilityScore(resumeText)
-        val toolEvidenceScore = calculateToolEvidenceScore(resumeText, targetRole, jobSpecification)
-        val responsibilityOutcomeScore = calculateResponsibilityOutcomeScore(resumeText)
-        val evidenceSpecificityScore = ((evidenceDensityScore + specificityScore + responsibilityOutcomeScore) / 3.0).roundToInt()
-        val jdRoleMatchScore = keywordMatchScore
-        val evidenceConfidenceScore = evidenceSpecificityScore
-        val bulletQualityScore = calculateBulletQualityScore(resumeText)
-        val toolSkillProofScore = toolEvidenceScore
-        val candidatePositioningScore = roleRelevanceScore
+        val keywordMatchScore =
+            calculateKeywordMatchScore(
+                foundKeywords.size,
+                combinedKeywords.size
+            )
+
+        val measurableImpactScore =
+            calculateMeasurableImpactScore(resumeText)
+
+        val actionVerbScore =
+            calculateStrongActionVerbScore(resumeText)
+
+        val sectionClarityScore =
+            calculateSectionClarityScore(resumeText)
+
+        val roleRelevanceScore =
+            calculateRoleRelevanceScore(
+                keywordMatchScore,
+                sectionClarityScore,
+                jobSpecification.isNotBlank()
+            )
+
+        val seniorityAlignmentScore =
+            calculateSeniorityAlignmentScore(
+                resumeText,
+                experienceLevel
+            )
+
+        val evidenceDensityScore =
+            calculateEvidenceDensityScore(resumeText)
+
+        val specificityScore =
+            calculateSpecificityScore(resumeText)
+
+        val atsReadabilityScore =
+            calculateAtsReadabilityScore(resumeText)
+
+        val toolEvidenceScore =
+            calculateToolEvidenceScore(
+                resumeText,
+                targetRole,
+                jobSpecification
+            )
+
+        val responsibilityOutcomeScore =
+            calculateResponsibilityOutcomeScore(
+                resumeText
+            )
+
+        val evidenceSpecificityScore = (
+            (
+                evidenceDensityScore +
+                    specificityScore +
+                    responsibilityOutcomeScore
+                ) / 3.0
+            ).roundToInt()
+
+        val bulletQualityScore =
+            calculateBulletQualityScore(resumeText)
+
         val overallScore = weightedOverallScore(
-            jdRoleMatchScore,
-            evidenceConfidenceScore,
-            measurableImpactScore,
-            bulletQualityScore,
-            seniorityAlignmentScore,
-            evidenceSpecificityScore,
-            toolProjectScore,
-            resumeText,
-            jobSpecification,
-            targetRole,
-            experienceLevel
+            jdRoleMatchScore = keywordMatchScore,
+            evidenceConfidenceScore =
+                evidenceSpecificityScore,
+            measurableImpactScore =
+                measurableImpactScore,
+            bulletQualityScore = bulletQualityScore,
+            seniorityAlignmentScore =
+                seniorityAlignmentScore,
+            atsReadabilityScore = atsReadabilityScore,
+            toolSkillProofScore = toolEvidenceScore,
+            candidatePositioningScore =
+                roleRelevanceScore,
+            actionVerbScore = actionVerbScore,
+            resumeText = resumeText,
+            jobSpecification = jobSpecification,
+            experienceLevel = experienceLevel
         )
         val sectionOrderIssues = detectSectionOrderIssues(resumeText)
         val missingSections = detectMissingSections(resumeText)
@@ -698,11 +828,11 @@ Overview
   ${shortenLabel(strongestEvidence, 160)}
 
 • Biggest improvement:
-  ${shortenLabel(biggestImprovement, 160)}
+  ${shortenLabel(weakestEvidence, 160)}
 
 • JD status:
-  $jdStatusNote
-        """.trimIndent()
+  $jdStatus
+""".trimIndent()
 
         val missingKeywordsHook = when {
             missingKeywords.isEmpty() && jobSpecification.isBlank() ->
@@ -837,50 +967,129 @@ ${formatExamples(foundJdKeywords.take(8), "No clear JD keyword matches detected 
             """.trimIndent()
         }
 
-        val jdMatchSection = if (jobSpecification.isBlank()) {
-            """
+        val jdMatchSection =
+            if (jobSpecification.isBlank()) {
+                """
 JD Match
 
-• Status: Not attached
-• This analysis is based on the selected target role.
-            """.trimIndent()
-        } else {
-            """
+• Status:
+  JD not attached.
+
+• Current analysis:
+  This analysis is based on the selected target role.
+        """.trimIndent()
+            } else {
+                val foundJdText = foundJdKeywords
+                    .take(8)
+                    .joinToString("\n") { "  • $it" }
+                    .ifBlank {
+                        "  • No clear JD keyword matches detected."
+                    }
+
+                val missingJdText = missingJdKeywords
+                    .take(8)
+                    .joinToString("\n") { "  • $it" }
+                    .ifBlank {
+                        "  • No major JD keyword gaps detected."
+                    }
+
+                """
 JD Match
 
 • Keywords found:
-  ${foundJdKeywords.take(8).joinToString(", ").ifBlank { "No clear JD keyword matches detected." }}
+$foundJdText
 
 • Keywords not clearly evidenced:
-  ${missingJdKeywords.take(8).joinToString(", ").ifBlank { "No major JD keyword gaps detected." }}
-            """.trimIndent()
-        }
+$missingJdText
+        """.trimIndent()
+            }
+
+        val sectionScores = """
+Section Scores
+
+• Keyword Match: $keywordMatchScore/100
+  Measures relevant role and attached-JD keyword coverage.
+
+• Measurable Impact: $measurableImpactScore/100
+  Measures whether achievements show numbers, scale, or outcomes.
+
+• Action Verbs: $actionVerbScore/100
+  Measures clear action-oriented language.
+
+• Section Clarity: $sectionClarityScore/100
+  Measures whether standard resume sections are identifiable.
+
+• Role Fit: $roleRelevanceScore/100
+  Measures how closely the resume supports the selected role.
+""".trimIndent()
 
         val fullReport = """
-Page 1 — Resume Scorecard:
-• Overall Score: $overallScore/100
-• Gap Severity: $gapSeverity
-• JD/Role Match: ${scoreRatingLabel(keywordMatchScore)}
-• Evidence Confidence: ${scoreRatingLabel(evidenceSpecificityScore)}
+Detailed Analysis
 
-Page 2 — Candidate Positioning:
-• Role Relevance: ${alignmentLabel(roleRelevanceScore)}
-• Seniority Alignment: ${scoreRatingLabel(seniorityAlignmentScore)} — ${seniorityAlignmentNote(resumeText, experienceLevel)}
+$sectionScores
 
-Page 3 — JD Gap Severity:
-• Missing Skills: ${foundKeywords.size} of ${combinedKeywords.size} found.
-• Action Items: ${if (missingJdKeywords.isNotEmpty()) "Evidence the missing keywords in your Experience section." else "Your resume aligns well with the JD signals."}
+Role Fit
 
-Page 4 — Evidence Quality:
-• Specificity: ${scoreRatingLabel(evidenceSpecificityScore)}
-• Measurable Impact: ${scoreRatingLabel(measurableImpactScore)} — ${if (impactSignals.isEmpty()) "Measurable outcomes are not clearly evidenced." else "Some quantified evidence exists."}
-• Recruiter concerns: ${recruiterRedFlags.firstOrNull() ?: "none detected"}
+• Role fit:
+  ${alignmentLabel(roleRelevanceScore)}
 
-Page 5 — Priority Fixes:
-• Bullet quality issues: ${bulletQualityIssues.joinToString(", ").ifBlank { "none detected" }}
-• Resume structure: ${atsParserRisks.firstOrNull() ?: "no major issue detected"}
-• $bestSectionToImprove: ${(missingRoleEvidence + genericClaims + responsibilityNoOutcome).firstOrNull() ?: "Add more quantified outcomes."}
-        """.trimIndent()
+• Experience level match:
+  ${scoreRatingLabel(seniorityAlignmentScore)}
+
+• Explanation:
+  ${seniorityAlignmentNote(
+            resumeText,
+            experienceLevel
+        )}
+
+Resume Evidence
+
+• Strongest evidence:
+  ${shortenLabel(strongestEvidence, 160)}
+
+• Main evidence weakness:
+  ${shortenLabel(weakestEvidence, 160)}
+
+• Measurable impact:
+  ${
+            if (impactSignals.isEmpty()) {
+                "Clear measurable outcomes were not detected."
+            } else {
+                "Some measurable outcomes are present."
+            }
+        }
+
+$jdMatchSection
+
+Resume Structure
+
+• Section clarity:
+  $sectionClarityScore/100
+
+• Main structure concern:
+  ${
+            (
+                atsParserRisks +
+                    sectionOrderIssues +
+                    missingSections
+                ).firstOrNull()
+                ?: "No major resume structure concern detected."
+        }
+
+Priority Fixes
+
+• Strengthen:
+  ${
+            missingKeywords.firstOrNull()
+                ?: "The most important role requirement"
+        }
+
+• Add:
+  A truthful measurable outcome to the most important experience or project point.
+
+• Rewrite:
+  Replace vague lines with a specific task, tool used, and real outcome.
+""".trimIndent()
 
         return ResumeReportResult(
             overallScore, keywordMatchScore, measurableImpactScore, actionVerbScore, sectionClarityScore,
@@ -1133,6 +1342,67 @@ Page 5 — Priority Fixes:
         }
     }
 
+    private fun calculateBulletQualityScore(
+        resumeText: String
+    ): Int {
+        val bullets =
+            extractCandidateBullets(resumeText)
+
+        if (bullets.isEmpty()) {
+            return 25
+        }
+
+        val total = bullets.sumOf { bullet ->
+            val lower = bullet.lowercase()
+            var points = 0
+
+            val hasStrongActionVerb =
+                strongActionVerbs.any { verb ->
+                    Regex(
+                        "\\b${Regex.escape(verb)}\\b",
+                        RegexOption.IGNORE_CASE
+                    ).containsMatchIn(bullet)
+                }
+
+            if (hasStrongActionVerb) {
+                points += 30
+            }
+
+            if (
+                containsMeaningfulTechnicalOrProjectContent(
+                    bullet
+                )
+            ) {
+                points += 25
+            }
+
+            if (
+                hasMeasurableImpactSignal(bullet) ||
+                resultWords.any { lower.contains(it) }
+            ) {
+                points += 30
+            }
+
+            if (bullet.length in 35..220) {
+                points += 15
+            }
+
+            if (
+                lower.startsWith("worked on") ||
+                lower.startsWith("responsible for") ||
+                lower.startsWith("helped")
+            ) {
+                points -= 20
+            }
+
+            points.coerceIn(0, 100)
+        }
+
+        return (total.toDouble() / bullets.size)
+            .roundToInt()
+            .coerceIn(20, 95)
+    }
+
     private fun calculateSectionClarityScore(resumeText: String): Int {
         val detectedSections = detectSectionSignals(resumeText)
         val wordCount = resumeText.split(Regex("\\s+")).filter { it.isNotBlank() }.size
@@ -1150,40 +1420,86 @@ Page 5 — Priority Fixes:
     }
 
     private fun weightedOverallScore(
-        keywordMatch: Int,
-        measurableImpact: Int,
-        actionVerb: Int,
-        structure: Int,
-        roleRelevance: Int,
-        seniorityAlignment: Int,
-        evidenceSpecificity: Int,
-        toolProject: Int,
+        jdRoleMatchScore: Int,
+        evidenceConfidenceScore: Int,
+        measurableImpactScore: Int,
+        bulletQualityScore: Int,
+        seniorityAlignmentScore: Int,
+        atsReadabilityScore: Int,
+        toolSkillProofScore: Int,
+        candidatePositioningScore: Int,
+        actionVerbScore: Int,
         resumeText: String,
         jobSpecification: String,
-        targetRole: String,
         experienceLevel: String
     ): Int {
         val score = (
-            keywordMatch * 0.18 +
-            evidenceSpecificity * 0.16 +
-            measurableImpact * 0.14 +
-            structure * 0.12 +
-            seniorityAlignment * 0.10 +
-            structure * 0.10 + 
-            toolProject * 0.08 +
-            roleRelevance * 0.08 +
-            actionVerb * 0.04
-        ).roundToInt()
+            jdRoleMatchScore * 0.18 +
+                evidenceConfidenceScore * 0.16 +
+                measurableImpactScore * 0.14 +
+                bulletQualityScore * 0.12 +
+                seniorityAlignmentScore * 0.10 +
+                atsReadabilityScore * 0.10 +
+                toolSkillProofScore * 0.08 +
+                candidatePositioningScore * 0.08 +
+                actionVerbScore * 0.04
+            ).roundToInt()
 
         var cappedScore = score
-        if (resumeText.length < 300) cappedScore = minOf(cappedScore, 55)
-        if (jobSpecification.isNotBlank() && keywordMatch < 15) cappedScore = minOf(cappedScore, 60)
-        if (measurableImpact < 20) cappedScore = minOf(cappedScore, 78)
+
+        if (resumeText.length < 300) {
+            cappedScore =
+                minOf(cappedScore, 55)
+        }
+
+        if (
+            jobSpecification.isNotBlank() &&
+            jdRoleMatchScore < 15
+        ) {
+            cappedScore =
+                minOf(cappedScore, 60)
+        }
+
+        if (measurableImpactScore < 20) {
+            cappedScore =
+                minOf(cappedScore, 78)
+        }
+
         val lower = resumeText.lowercase()
-        if (!lower.contains("experience") && !lower.contains("project") && !lower.contains("work history")) cappedScore = minOf(cappedScore, 65)
-        val isSenior = experienceLevel.contains("Senior") || experienceLevel.contains("Lead") || experienceLevel.contains("7+") || experienceLevel.contains("4-7")
-        if (isSenior && measurableImpact < 40) cappedScore = minOf(cappedScore, 70)
-        if (structure < 40) cappedScore = minOf(cappedScore, 75)
+
+        if (
+            !lower.contains("experience") &&
+            !lower.contains("project") &&
+            !lower.contains("work history")
+        ) {
+            cappedScore =
+                minOf(cappedScore, 65)
+        }
+
+        val isSenior =
+            experienceLevel.contains(
+                "Senior",
+                ignoreCase = true
+            ) ||
+                experienceLevel.contains(
+                    "Lead",
+                    ignoreCase = true
+                ) ||
+                experienceLevel.contains("7+") ||
+                experienceLevel.contains("4-7")
+
+        if (
+            isSenior &&
+            measurableImpactScore < 40
+        ) {
+            cappedScore =
+                minOf(cappedScore, 70)
+        }
+
+        if (atsReadabilityScore < 40) {
+            cappedScore =
+                minOf(cappedScore, 75)
+        }
 
         return cappedScore.coerceIn(0, 100)
     }
@@ -1329,34 +1645,123 @@ Page 5 — Priority Fixes:
         .distinct()
         .take(5)
 
-    private fun resumeLines(text: String): List<String> {
-        if (text.isBlank()) return emptyList()
+    private fun resumeLines(
+        text: String
+    ): List<String> {
+        if (text.isBlank()) {
+            return emptyList()
+        }
 
-        val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
-        val reconstructed = mutableListOf<String>()
-        var currentBuffer = StringBuilder()
+        val lines = text
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
+        val reconstructed =
+            mutableListOf<String>()
+
+        var currentBuffer =
+            StringBuilder()
+
+        val continuationStarter = Regex(
+            """^(and|or|with|for|to|in|on|of|using|through|while|which|that)\b""",
+            RegexOption.IGNORE_CASE
+        )
+
+        fun flushBuffer() {
+            if (currentBuffer.isEmpty()) {
+                return
+            }
+
+            reconstructed.add(
+                currentBuffer
+                    .toString()
+                    .replace(Regex("""\s+"""), " ")
+                    .trim()
+            )
+
+            currentBuffer = StringBuilder()
+        }
 
         for (line in lines) {
-            val isBulletStart = line.startsWith("•") || line.startsWith("*")
-            val firstChar = line.firstOrNull()
-            val isLowercaseStart = firstChar?.isLowerCase() ?: false
+            val isBulletStart =
+                line.startsWith("•") ||
+                    line.startsWith("*") ||
+                    line.startsWith("▪") ||
+                    line.startsWith("◦")
 
-            val isContinuation = currentBuffer.isNotEmpty() && isLowercaseStart && !isBulletStart
+            val isHeading =
+                isResumeSectionHeading(line)
+
+            val startsLowercase =
+                line.firstOrNull()
+                    ?.isLowerCase() == true
+
+            val startsWithContinuationWord =
+                continuationStarter
+                    .containsMatchIn(line)
+
+            val previousIsHeading =
+                currentBuffer.isNotEmpty() &&
+                    isResumeSectionHeading(
+                        currentBuffer.toString()
+                    )
+
+            val isContinuation =
+                currentBuffer.isNotEmpty() &&
+                    !previousIsHeading &&
+                    !isBulletStart &&
+                    !isHeading &&
+                    (
+                        startsLowercase ||
+                            startsWithContinuationWord
+                        )
 
             if (isContinuation) {
-                currentBuffer.append(" ").append(line)
+                currentBuffer
+                    .append(" ")
+                    .append(line)
             } else {
-                if (currentBuffer.isNotEmpty()) {
-                    reconstructed.add(currentBuffer.toString())
-                }
-                currentBuffer = StringBuilder(line)
+                flushBuffer()
+                currentBuffer.append(line)
             }
         }
-        if (currentBuffer.isNotEmpty()) {
-            reconstructed.add(currentBuffer.toString())
-        }
 
-        return reconstructed.filterNot { isBareStopwordFragment(it) }
+        flushBuffer()
+
+        return reconstructed.filterNot {
+            isBareStopwordFragment(it)
+        }
+    }
+
+    private fun isResumeSectionHeading(
+        line: String
+    ): Boolean {
+        val cleaned =
+            line.trim().trimEnd(':')
+
+        val headings = setOf(
+            "summary",
+            "profile",
+            "objective",
+            "experience",
+            "work experience",
+            "professional experience",
+            "employment",
+            "education",
+            "skills",
+            "technical skills",
+            "projects",
+            "certifications",
+            "awards",
+            "publications",
+            "research",
+            "languages",
+            "interests"
+        )
+
+        return cleaned.lowercase() in headings ||
+            looksLikeHeading(cleaned)
     }
 
     private fun isBareStopwordFragment(line: String): Boolean {
@@ -1410,6 +1815,31 @@ Page 5 — Priority Fixes:
     private fun getKeywordsForRole(targetRole: String): List<String> {
         val roleLower = targetRole.lowercase()
         return when {
+            roleLower == "software engineer" -> listOf(
+                "Java",
+                "Kotlin",
+                "Python",
+                "JavaScript",
+                "TypeScript",
+                "C++",
+                "Data Structures",
+                "Algorithms",
+                "Object-Oriented Programming",
+                "System Design",
+                "REST API",
+                "SQL",
+                "Git",
+                "Unit Testing",
+                "Integration Testing",
+                "Debugging",
+                "CI/CD",
+                "Docker",
+                "Cloud Computing",
+                "Agile",
+                "Performance Optimization",
+                "Security",
+                "Documentation"
+            )
             roleLower.contains("android") -> listOf(
                 "Kotlin", "Android SDK", "Jetpack Compose", "Coroutines", "Flow", "MVVM", "Room", "Retrofit", "Dagger Hilt", "Clean Architecture",
                 "Unit Testing", "Espresso", "Google Play Store", "Firebase", "CI/CD", "Git", "Material Design", "Performance Tuning", "Memory Management",
@@ -1520,7 +1950,10 @@ Page 5 — Priority Fixes:
                 "Project Management", "Data Analysis", "KPIs", "Cost Reduction", "Vendor Management", "SOPs", "Quality Control",
                 "Workflow Optimization", "Excel", "Strategic Planning", "Change Management"
             )
-            roleLower.contains("sales") -> listOf(
+            roleLower.contains("sales") ||
+                roleLower.contains(
+                    "business development"
+                ) -> listOf(
                 "Sales Pipeline", "Lead Generation", "CRM", "Salesforce", "Account Management", "B2B Sales", "Negotiation", "Cold Calling",
                 "Closing Deals", "Market Research", "Business Development", "Customer Relationship Management", "Revenue Growth",
                 "Presentation Skills", "Communication", "Sales Strategy"

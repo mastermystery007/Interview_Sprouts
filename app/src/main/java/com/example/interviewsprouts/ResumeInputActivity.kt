@@ -26,10 +26,10 @@ class ResumeInputActivity : AppCompatActivity() {
 
     private val professionList = listOf(
         "Software Engineer",
-        "Android Developer",
+        "Android Engineer",
         "iOS Developer",
-        "Backend Developer",
-        "Frontend Developer",
+        "Backend Software Engineer",
+        "Frontend Software Engineer",
         "Full-Stack Developer",
         "Machine Learning Engineer",
         "AI Engineer",
@@ -39,8 +39,8 @@ class ResumeInputActivity : AppCompatActivity() {
         "DevOps Engineer",
         "Site Reliability Engineer (SRE)",
         "QA Automation Engineer / SDET",
-        "Embedded Systems Engineer",
-        "Cybersecurity Analyst",
+        "Embedded Software Engineer",
+        "Security Engineer",
         "Game Developer",
         "Business Analyst",
         "Product Manager",
@@ -55,7 +55,7 @@ class ResumeInputActivity : AppCompatActivity() {
         "HR Executive",
         "Recruiter / Talent Acquisition Specialist",
         "Research Assistant / Researcher",
-        "Other / General"
+        "General Job Applicant"
     )
 
     private val experienceLevelList = listOf(
@@ -174,66 +174,126 @@ class ResumeInputActivity : AppCompatActivity() {
         }
     }
 
-    private fun extractTextFromPdf(uri: Uri): String {
-        contentResolver.openInputStream(uri).use { inputStream ->
-            if (inputStream == null) {
-                throw IllegalArgumentException("Unable to open PDF file.")
-            }
+    private fun extractTextFromPdf(
+        uri: Uri
+    ): String {
+        contentResolver
+            .openInputStream(uri)
+            .use { inputStream ->
+                if (inputStream == null) {
+                    throw IllegalArgumentException(
+                        "Unable to open PDF file."
+                    )
+                }
 
-            PDDocument.load(inputStream).use { document ->
-                val stripper = PDFTextStripper()
-                val raw = stripper.getText(document)
-                return normalizeExtractedResumeText(raw)
-            }
-        }
+                PDDocument
+                    .load(inputStream)
+                    .use { document ->
+                        val stripper =
+                            PDFTextStripper()
 
-        return rebuilt.joinToString("\n")
-            .replace(Regex("[ \\t]+"), " ")
-            .replace(Regex("\\n{3,}"), "\n\n")
-            .trim()
+                        val raw =
+                            stripper.getText(document)
+
+                        return normalizeExtractedResumeText(
+                            raw
+                        )
+                    }
+            }
     }
 
 
-    private fun normalizeExtractedResumeText(rawText: String): String {
+    private fun normalizeExtractedResumeText(
+        rawText: String
+    ): String {
         val normalized = rawText
             .replace("\r\n", "\n")
             .replace("\r", "\n")
-            .replace(Regex("(?m)^\\s*[●▪◦‣–-]\\s+"), "• ")
-            .replace(Regex("(?m)([A-Za-z]{2,})-\\n([A-Za-z]{2,})"), "$1$2")
+            .replace(
+                Regex(
+                    """(?m)^\s*[●▪◦‣–-]\s+"""
+                ),
+                "• "
+            )
+            .replace(
+                Regex(
+                    """([A-Za-z]{2,})-\n([A-Za-z]{2,})"""
+                )
+            ) { match ->
+                match.groupValues[1] +
+                    match.groupValues[2]
+            }
 
-        val sourceLines = normalized.lines()
-            .map { it.replace(Regex("\\s+"), " ").trim() }
-            .filterNot { it.matches(Regex("^\\d+$")) }
+        val sourceLines = normalized
+            .lines()
+            .map {
+                it.replace(
+                    Regex("""\s+"""),
+                    " "
+                ).trim()
+            }
+            .filterNot {
+                it.matches(Regex("""^\d+$"""))
+            }
 
-        val rebuilt = mutableListOf<String>()
+        val rebuilt =
+            mutableListOf<String>()
+
         for (rawLine in sourceLines) {
             val line = rawLine.trim()
+
             if (line.isBlank()) {
-                if (rebuilt.lastOrNull()?.isNotBlank() == true) rebuilt.add("")
+                if (
+                    rebuilt.lastOrNull()
+                        ?.isNotBlank() == true
+                ) {
+                    rebuilt.add("")
+                }
+
                 continue
             }
 
-            if (rebuilt.isEmpty() || rebuilt.last().isBlank()) {
+            if (
+                rebuilt.isEmpty() ||
+                rebuilt.last().isBlank()
+            ) {
                 rebuilt.add(line)
                 continue
             }
 
             val previous = rebuilt.last()
-            val shouldMerge = !previous.endsWithSentencePunctuation() &&
-                !isLikelyResumeHeading(line) &&
-                !isBulletLine(line) &&
-                !isLikelyDateLine(line)
+
+            val shouldMerge =
+                !previous.endsWithSentencePunctuation() &&
+                    !isLikelyResumeHeading(previous) &&
+                    !isLikelyDateLine(previous) &&
+                    !isLikelyResumeHeading(line) &&
+                    !isBulletLine(line) &&
+                    !isLikelyDateLine(line)
 
             if (shouldMerge) {
-                rebuilt[rebuilt.lastIndex] = "$previous $line".replace(Regex("\\s+"), " ").trim()
+                rebuilt[rebuilt.lastIndex] =
+                    "$previous $line"
+                        .replace(
+                            Regex("""\s+"""),
+                            " "
+                        )
+                        .trim()
             } else {
                 rebuilt.add(line)
             }
         }
 
-        return rebuilt.joinToString("\n")
-            .replace(Regex("[ \\t]+"), " ")
-            .replace(Regex("\\n{3,}"), "\n\n")
+        return rebuilt
+            .joinToString("\n")
+            .replace(
+                Regex("""[ \t]+"""),
+                " "
+            )
+            .replace(
+                Regex("""\n{3,}"""),
+                "\n\n"
+            )
             .trim()
     }
 

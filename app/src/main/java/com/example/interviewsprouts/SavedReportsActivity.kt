@@ -10,6 +10,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class SavedReportsActivity : AppCompatActivity() {
     private lateinit var container: LinearLayout
@@ -47,9 +49,24 @@ class SavedReportsActivity : AppCompatActivity() {
         }
         emptyText.visibility = View.GONE
         container.visibility = View.VISIBLE
-        for (index in reports.length() - 1 downTo 0) {
-            val report = reports.optJSONObject(index) ?: continue
-            container.addView(createReportCard(report))
+        var displayPosition = 1
+
+        for (
+            index in reports.length() - 1
+                downTo 0
+        ) {
+            val report =
+                reports.optJSONObject(index)
+                    ?: continue
+
+            container.addView(
+                createReportCard(
+                    report,
+                    displayPosition
+                )
+            )
+
+            displayPosition += 1
         }
         if (container.childCount == 0) emptyText.visibility = View.VISIBLE
     }
@@ -59,40 +76,181 @@ class SavedReportsActivity : AppCompatActivity() {
         return try { JSONArray(rawJson) } catch (_: Exception) { JSONArray() }
     }
 
-    private fun createReportCard(report: JSONObject): View {
-        val score = report.optInt("overall_score", 0)
-        val rating = report.optString("rating_label").ifBlank { ratingForScore(score) }
-        val preview = report.optString("basic_feedback", "Saved report preview unavailable.")
-            .lineSequence().map { it.trim().trimStart('•') }.firstOrNull { it.isNotBlank() } ?: "Saved report preview unavailable."
+    private fun createReportCard(
+        report: JSONObject,
+        displayPosition: Int
+    ): View {
+        val score =
+            report.optInt("overall_score", 0)
+
+        val rating = report
+            .optString("rating_label")
+            .ifBlank {
+                ratingForScore(score)
+            }
+
+        val targetRole = report.optString(
+            "target_role",
+            "Target role not saved"
+        )
+
+        val rawTimestamp = report.optString(
+            "timestamp",
+            "Date not saved"
+        )
+
+        val formattedDate =
+            formatSavedDate(rawTimestamp)
+
+        val displayNumber =
+            displayPosition
+                .toString()
+                .padStart(3, '0')
+
+        val title =
+            "Report $displayNumber — " +
+                "$targetRole — " +
+                "$score% — " +
+                formattedDate
+
+        val preview = report
+            .optString(
+                "basic_feedback",
+                "Saved report preview unavailable."
+            )
+            .lineSequence()
+            .map {
+                it.trim()
+                    .trimStart('•')
+                    .trim()
+            }
+            .firstOrNull {
+                it.isNotBlank() &&
+                    !it.equals(
+                        "Overview",
+                        ignoreCase = true
+                    )
+            }
+            ?: "Saved report preview unavailable."
+
         val card = TextView(this).apply {
             text = buildString {
-                appendLine(report.optString("target_role", "Target role not saved"))
-                appendLine("Saved: ${report.optString("timestamp", "Date not saved")}")
-                appendLine("Experience: ${report.optString("experience_level", "Experience not saved")}")
-                appendLine("Score: $score/100 • $rating")
-                report.optString("jd_status").takeIf { it.isNotBlank() }?.let { appendLine(it) }
+                appendLine(title)
+
+                appendLine(
+                    "Experience: ${
+                        report.optString(
+                            "experience_level",
+                            "Experience not saved"
+                        )
+                    }"
+                )
+
+                appendLine("Rating: $rating")
+
+                report
+                    .optString("jd_status")
+                    .takeIf { it.isNotBlank() }
+                    ?.let { appendLine(it) }
+
                 appendLine()
                 appendLine(preview)
                 append("Tap to view full report")
             }
+
             setTextColor(0xFF111111.toInt())
             textSize = 15f
-            setLineSpacing(dp(3).toFloat(), 1f)
-            setPadding(dp(16), dp(16), dp(16), dp(16))
-            setBackgroundResource(R.drawable.bg_saved_report_card)
+            setLineSpacing(
+                dp(3).toFloat(),
+                1f
+            )
+            setPadding(
+                dp(16),
+                dp(16),
+                dp(16),
+                dp(16)
+            )
+
+            setBackgroundResource(
+                R.drawable.bg_saved_report_card
+            )
+
             isClickable = true
             isFocusable = true
-            foreground = obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).let { a ->
-                val d = a.getDrawable(0); a.recycle(); d
+
+            foreground = obtainStyledAttributes(
+                intArrayOf(
+                    android.R.attr
+                        .selectableItemBackground
+                )
+            ).let { attributes ->
+                val drawable =
+                    attributes.getDrawable(0)
+
+                attributes.recycle()
+                drawable
             }
+
             setOnClickListener {
-                startActivity(Intent(this@SavedReportsActivity, SavedReportDetailActivity::class.java).putExtra("report_json", report.toString()))
+                startActivity(
+                    Intent(
+                        this@SavedReportsActivity,
+                        SavedReportDetailActivity::class.java
+                    ).putExtra(
+                        "report_json",
+                        report.toString()
+                    )
+                )
             }
         }
-        card.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            bottomMargin = dp(12)
-        }
+
+        card.layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams
+                    .MATCH_PARENT,
+                LinearLayout.LayoutParams
+                    .WRAP_CONTENT
+            ).apply {
+                bottomMargin = dp(12)
+            }
+
         return card
+    }
+
+    private fun formatSavedDate(
+        rawTimestamp: String
+    ): String {
+        if (
+            rawTimestamp.isBlank() ||
+            rawTimestamp == "Date not saved"
+        ) {
+            return "Date not saved"
+        }
+
+        val inputFormat =
+            SimpleDateFormat(
+                "yyyy-MM-dd HH:mm",
+                Locale.US
+            )
+
+        val outputFormat =
+            SimpleDateFormat(
+                "dd MMM yyyy",
+                Locale.US
+            )
+
+        return try {
+            val parsed =
+                inputFormat.parse(rawTimestamp)
+
+            if (parsed == null) {
+                rawTimestamp
+            } else {
+                outputFormat.format(parsed)
+            }
+        } catch (_: Exception) {
+            rawTimestamp
+        }
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
