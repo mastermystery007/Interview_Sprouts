@@ -26,10 +26,10 @@ class ResumeInputActivity : AppCompatActivity() {
 
     private val professionList = listOf(
         "Software Engineer",
-        "Android Engineer",
+        "Android Developer",
         "iOS Developer",
-        "Backend Software Engineer",
-        "Frontend Software Engineer",
+        "Backend Developer",
+        "Frontend Developer",
         "Full-Stack Developer",
         "Machine Learning Engineer",
         "AI Engineer",
@@ -39,8 +39,8 @@ class ResumeInputActivity : AppCompatActivity() {
         "DevOps Engineer",
         "Site Reliability Engineer (SRE)",
         "QA Automation Engineer / SDET",
-        "Embedded Software Engineer",
-        "Security Engineer",
+        "Embedded Systems Engineer",
+        "Cybersecurity Analyst",
         "Game Developer",
         "Business Analyst",
         "Product Manager",
@@ -55,7 +55,7 @@ class ResumeInputActivity : AppCompatActivity() {
         "HR Executive",
         "Recruiter / Talent Acquisition Specialist",
         "Research Assistant / Researcher",
-        "General Job Applicant"
+        "Other / General"
     )
 
     private val experienceLevelList = listOf(
@@ -186,6 +186,11 @@ class ResumeInputActivity : AppCompatActivity() {
                 return normalizeExtractedResumeText(raw)
             }
         }
+
+        return rebuilt.joinToString("\n")
+            .replace(Regex("[ \\t]+"), " ")
+            .replace(Regex("\\n{3,}"), "\n\n")
+            .trim()
     }
 
 
@@ -194,12 +199,7 @@ class ResumeInputActivity : AppCompatActivity() {
             .replace("\r\n", "\n")
             .replace("\r", "\n")
             .replace(Regex("(?m)^\\s*[●▪◦‣–-]\\s+"), "• ")
-            .replace(
-                Regex("""([A-Za-z]{2,})-
-([A-Za-z]{2,})""")
-            ) { match ->
-                match.groupValues[1] + match.groupValues[2]
-            }
+            .replace(Regex("(?m)([A-Za-z]{2,})-\\n([A-Za-z]{2,})"), "$1$2")
 
         val sourceLines = normalized.lines()
             .map { it.replace(Regex("\\s+"), " ").trim() }
@@ -219,13 +219,10 @@ class ResumeInputActivity : AppCompatActivity() {
             }
 
             val previous = rebuilt.last()
-            val shouldMerge =
-                !previous.endsWithSentencePunctuation() &&
-                    !isLikelyResumeHeading(previous) &&
-                    !isLikelyDateLine(previous) &&
-                    !isLikelyResumeHeading(line) &&
-                    !isBulletLine(line) &&
-                    !isLikelyDateLine(line)
+            val shouldMerge = !previous.endsWithSentencePunctuation() &&
+                !isLikelyResumeHeading(line) &&
+                !isBulletLine(line) &&
+                !isLikelyDateLine(line)
 
             if (shouldMerge) {
                 rebuilt[rebuilt.lastIndex] = "$previous $line".replace(Regex("\\s+"), " ").trim()
