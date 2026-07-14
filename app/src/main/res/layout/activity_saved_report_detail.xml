@@ -38,11 +38,6 @@
             android:background="@drawable/bg_saved_header_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
-            android:singleLine="false"
-            android:ellipsize="none"
-            android:breakStrategy="simple"
-            android:hyphenationFrequency="none"
-            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textSize="15sp" />
 
@@ -54,11 +49,6 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
-            android:singleLine="false"
-            android:ellipsize="none"
-            android:breakStrategy="simple"
-            android:hyphenationFrequency="none"
-            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
@@ -71,11 +61,6 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
-            android:singleLine="false"
-            android:ellipsize="none"
-            android:breakStrategy="simple"
-            android:hyphenationFrequency="none"
-            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
