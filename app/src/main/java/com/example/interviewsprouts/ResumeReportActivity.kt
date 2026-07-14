@@ -630,17 +630,18 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val specificityScore = calculateSpecificityScore(resumeText)
         val atsReadabilityScore = calculateAtsReadabilityScore(resumeText)
         val toolEvidenceScore = calculateToolEvidenceScore(resumeText, targetRole, jobSpecification)
-        val projectDepthScore = calculateProjectExperienceDepthScore(resumeText)
         val responsibilityOutcomeScore = calculateResponsibilityOutcomeScore(resumeText)
-        val structureScore = ((sectionClarityScore + atsReadabilityScore) / 2.0).roundToInt()
         val evidenceSpecificityScore = ((evidenceDensityScore + specificityScore + responsibilityOutcomeScore) / 3.0).roundToInt()
-        val toolProjectScore = ((toolEvidenceScore + projectDepthScore) / 2.0).roundToInt()
+        val jdRoleMatchScore = keywordMatchScore
+        val evidenceConfidenceScore = evidenceSpecificityScore
+        val bulletQualityScore = calculateBulletQualityScore(resumeText)
+        val toolSkillProofScore = toolEvidenceScore
+        val candidatePositioningScore = roleRelevanceScore
         val overallScore = weightedOverallScore(
-            keywordMatchScore,
+            jdRoleMatchScore,
+            evidenceConfidenceScore,
             measurableImpactScore,
-            actionVerbScore,
-            structureScore,
-            roleRelevanceScore,
+            bulletQualityScore,
             seniorityAlignmentScore,
             evidenceSpecificityScore,
             toolProjectScore,
