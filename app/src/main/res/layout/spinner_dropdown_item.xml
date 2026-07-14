@@ -4,8 +4,6 @@
     android:layout_height="wrap_content"
     android:minHeight="44dp"
     android:gravity="center_vertical"
-    android:textColor="#111111"
-    android:textSize="15sp"
     android:paddingStart="12dp"
     android:paddingEnd="12dp"
     android:paddingTop="8dp"
@@ -13,4 +11,8 @@
     android:singleLine="false"
     android:maxLines="3"
     android:ellipsize="none"
+    android:breakStrategy="simple"
+    android:includeFontPadding="true"
+    android:textColor="#111111"
+    android:textSize="15sp"
     android:background="#FFFFFF" />
