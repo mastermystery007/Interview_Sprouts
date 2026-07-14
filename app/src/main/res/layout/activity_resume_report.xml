@@ -95,7 +95,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:ellipsize="none"
+                        android:includeFontPadding="true"
                         android:maxLines="2"
+                        android:singleLine="false"
                         android:textColor="#111111"
                         android:textSize="24sp"
                         android:textStyle="bold" />
@@ -119,6 +121,11 @@
                         android:paddingTop="6dp"
                         android:paddingEnd="12dp"
                         android:paddingBottom="6dp"
+                        android:singleLine="false"
+                        android:maxLines="2"
+                        android:ellipsize="none"
+                        android:breakStrategy="simple"
+                        android:gravity="center_vertical"
                         android:textColor="#333333"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -142,50 +149,82 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <LinearLayout
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:orientation="horizontal">
+            android:fillViewport="false"
+            android:scrollbars="none">
 
-            <TextView
-                android:id="@+id/chipTargetRole"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_chip"
-                android:paddingStart="12dp"
-                android:paddingTop="7dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="7dp"
-                android:textColor="#333333"
-                android:textSize="12sp" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/chipExperienceLevel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_chip"
-                android:paddingStart="12dp"
-                android:paddingTop="7dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="7dp"
-                android:textColor="#333333"
-                android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/chipTargetRole"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="190dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:singleLine="false"
+                    android:maxLines="2"
+                    android:ellipsize="none"
+                    android:breakStrategy="simple"
+                    android:gravity="center_vertical"
+                    android:textColor="#333333"
+                    android:textSize="12sp" />
 
-            <TextView
-                android:id="@+id/chipJdStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_chip"
-                android:paddingStart="12dp"
-                android:paddingTop="7dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="7dp"
-                android:textColor="#333333"
-                android:textSize="12sp" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/chipExperienceLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:singleLine="false"
+                    android:maxLines="2"
+                    android:ellipsize="none"
+                    android:breakStrategy="simple"
+                    android:gravity="center_vertical"
+                    android:textColor="#333333"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/chipJdStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:singleLine="false"
+                    android:maxLines="2"
+                    android:ellipsize="none"
+                    android:breakStrategy="simple"
+                    android:gravity="center_vertical"
+                    android:textColor="#333333"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Quick Review"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textBasicFeedback"
@@ -195,6 +234,11 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
@@ -207,6 +251,11 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
@@ -247,7 +296,7 @@
                 <TextView
                     android:id="@+id/tabBespoke"
                     style="@style/ResumeReportTab"
-                    android:text="Bespoke" />
+                    android:text="JD Match" />
             </LinearLayout>
         </HorizontalScrollView>
 
@@ -259,20 +308,48 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp"
             android:visibility="gone" />
 
         <TextView
+            android:id="@+id/headerUnlockDetailed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Unlock Gold Star Analysis"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="visible" />
+
+        <TextView
             android:id="@+id/textLockedReportMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:background="@drawable/bg_locked_card"
+            android:background="@drawable/bg_locked_ad_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
-            android:text="Gold Star Analysis is locked. Watch an ad to unlock category breakdown, gaps, keywords, and JD matching."
+            android:text="Unlock Gold Star Analysis
+
+Watch an ad to unlock:
+• Strengths
+• Gaps
+• Keyword match
+• Section scores
+• JD match if attached"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp" />
@@ -285,6 +362,17 @@
             android:text="Watch Ad to Unlock Gold Star Analysis" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:id="@+id/headerDetailedAnalysis"
+            android:text="Detailed Analysis"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/textFullReport"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -292,6 +380,11 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp"
@@ -324,13 +417,29 @@
             android:visibility="gone" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:id="@+id/headerUnlockAdvanced"
+            android:text="Unlock Diamond Star Analysis"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/textAdvancedLockedMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:background="@drawable/bg_locked_card"
+            android:background="@drawable/bg_advanced_locked_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp"
@@ -345,6 +454,17 @@
             android:visibility="gone" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:id="@+id/headerAdvancedReview"
+            android:text="Diamond Star Analysis"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/textAdvancedLlmReview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -352,10 +472,24 @@
             android:background="@drawable/bg_content_card"
             android:lineSpacingExtra="4dp"
             android:padding="16dp"
+            android:singleLine="false"
+            android:ellipsize="none"
+            android:breakStrategy="simple"
+            android:hyphenationFrequency="none"
+            android:includeFontPadding="true"
             android:textColor="#111111"
             android:textIsSelectable="true"
             android:textSize="15sp"
             android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Save Report"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textLocalSaveNote"
