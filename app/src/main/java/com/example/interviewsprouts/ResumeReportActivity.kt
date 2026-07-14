@@ -1,6 +1,7 @@
 package com.example.interviewsprouts
 
 import android.graphics.Color
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -8,7 +9,6 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
-import android.graphics.Typeface
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -62,7 +62,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textScoreValue).text = scoreRatingLabel(report.overallScore)
         findViewById<TextView>(R.id.textAlignmentLabel).text = alignmentLabel(report.overallScore)
         findViewById<TextView>(R.id.textJdChip).text = if (jdProvided) "JD: Attached" else "JD: Not attached"
-        findViewById<TextView>(R.id.chipTargetRole).text = targetRole
+        findViewById<TextView>(R.id.chipTargetRole).text = shortenLabel(targetRole, 24)
         findViewById<TextView>(R.id.chipExperienceLevel).text = experienceLevel
         findViewById<TextView>(R.id.chipJdStatus).text = if (jdProvided) "JD: Attached" else "JD: Not attached"
         findViewById<ScoreCircleView>(R.id.scoreCircleView).setScore(report.overallScore)
@@ -70,15 +70,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textBasicFeedback).text = applyReportFormatting(report.basicFeedback)
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
         findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
-        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = """
-Unlock Diamond Star Analysis
-
-Watch another ad to unlock:
-• Optimized resume points
-• Missing JD-based points
-• Resume-specific interview questions
-• Optional resume point rewrites
-        """.trimIndent()
+        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = "Diamond Star Analysis with resume improvement suggestions and resume-specific interview questions is locked. Watch another ad to unlock.\n\nDiamond Star analysis sends your resume text and job description to our backend only after this second unlock."
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
 
         tabOverview = findViewById(R.id.tabOverview)
@@ -113,44 +105,31 @@ Watch another ad to unlock:
         val textAdvancedLlmReview = findViewById<TextView>(R.id.textAdvancedLlmReview)
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
         val btnUnlockAdvancedLlmReview = findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
-        val headerUnlockDetailed = findViewById<TextView>(R.id.headerUnlockDetailed)
-        val headerDetailedAnalysis = findViewById<TextView>(R.id.headerDetailedAnalysis)
-        val headerUnlockAdvanced = findViewById<TextView>(R.id.headerUnlockAdvanced)
-        val headerAdvancedReview = findViewById<TextView>(R.id.headerAdvancedReview)
 
-        headerUnlockDetailed.visibility = View.VISIBLE
-        textLockedReportMessage.visibility = View.VISIBLE
-        btnUnlockFullReport.visibility = View.VISIBLE
         tabScrollContainer.visibility = View.GONE
         textTabContent.visibility = View.GONE
         textFullReport.visibility = View.GONE
-        headerDetailedAnalysis.visibility = View.GONE
-        headerUnlockAdvanced.visibility = View.GONE
-        headerAdvancedReview.visibility = View.GONE
-        selectTab(tabOverview, report.overviewContent)
-
+        textLockedReportMessage.visibility = View.VISIBLE
+        btnUnlockFullReport.visibility = View.VISIBLE
+        
         btnUnlockFullReport.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Unlock Gold Star Analysis")
-                .setMessage("Watch a short ad to unlock detailed section scores, strengths, improvements, keyword matching, and JD matching.")
+                .setMessage("Watch a short ad to unlock the complete category breakdown, JD gap severity, and evidence quality analysis.")
                 .setPositiveButton("Watch Ad") { _, _ ->
                     isFirstAdUnlocked = true
-                    headerUnlockDetailed.visibility = View.GONE
+                    textLockedReportMessage.text = "Gold Star Analysis Unlocked"
+                    textLockedReportMessage.setBackgroundResource(R.drawable.bg_unlocked_card)
+                    
                     tabScrollContainer.visibility = View.VISIBLE
                     textTabContent.visibility = View.VISIBLE
-                    setAllTabsVisible()
-                    selectTab(tabOverview, report.overviewContent)
                     textFullReport.visibility = View.VISIBLE
-                    headerDetailedAnalysis.visibility = View.VISIBLE
-                    headerUnlockAdvanced.visibility = View.VISIBLE
-                    headerAdvancedReview.visibility = View.GONE
-                    textUnlockedPointSuggestions.visibility = View.GONE
-                    textUnlockedInterviewQuestions.visibility = View.GONE
-                    textLockedReportMessage.visibility = View.GONE
                     btnUnlockFullReport.visibility = View.GONE
+                    
                     textAdvancedLockedMessage.visibility = View.VISIBLE
                     btnUnlockAdvancedLlmReview.visibility = View.VISIBLE
-                    textAdvancedLlmReview.visibility = View.GONE
+                    
+                    selectTab(tabOverview, report.overviewContent)
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -159,10 +138,11 @@ Watch another ad to unlock:
         btnUnlockAdvancedLlmReview.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Unlock Diamond Star Analysis")
-                .setMessage("Watch another ad to unlock compressed AI resume suggestions and resume-specific interview questions.")
+                .setMessage("Watch another ad to unlock deep AI suggestions and resume-specific interview questions.")
                 .setPositiveButton("Watch Ad") { _, _ ->
                     isSecondAdUnlocked = true
-                    headerUnlockAdvanced.visibility = View.GONE
+                    textAdvancedLlmReview.visibility = View.VISIBLE
+                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
                     textAdvancedLockedMessage.visibility = View.GONE
                     btnUnlockAdvancedLlmReview.visibility = View.GONE
                     textAdvancedLlmReview.visibility = View.VISIBLE
@@ -203,12 +183,6 @@ Watch another ad to unlock:
     override fun onDestroy() {
         stopAdvancedLoadingAnimation()
         super.onDestroy()
-    }
-
-    private fun setAllTabsVisible() {
-        listOf(tabOverview, tabStrengths, tabGaps, tabKeywords, tabBespoke).forEach { tab ->
-            tab.visibility = View.VISIBLE
-        }
     }
 
     private fun selectTab(selected: TextView, content: String) {
@@ -286,10 +260,7 @@ Watch another ad to unlock:
     }
 
     private fun compactAdvancedReview(text: String?): String {
-        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review",
-            "Diamond Star Analysis",
-            "Gold Star Overview",
-            "Section Scores", "Advanced Review", "AI Review")
+        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review", "Advanced Review", "AI Review")
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val items = extractBulletLikeItems(cleaned, splitSemicolons = true)
@@ -429,12 +400,6 @@ Watch another ad to unlock:
         return (match?.groupValues?.getOrNull(1) ?: text).trim()
     }
 
-    private fun removeBlankLines(text: String): String = text.lines()
-        .map { it.trimEnd() }
-        .filter { it.isNotBlank() }
-        .joinToString("\n")
-        .trim()
-
     private fun stripDuplicateSectionHeading(text: String, vararg headings: String): String {
         var cleaned = text.trim()
         headings.forEach { heading ->
@@ -461,9 +426,6 @@ Watch another ad to unlock:
 
     private fun looksLikeStandaloneHeading(line: String): Boolean = listOf(
         "Advanced AI Review",
-            "Diamond Star Analysis",
-            "Gold Star Overview",
-            "Section Scores",
         "Advanced Review",
         "AI Review",
         "Metric Evidence Detected",
@@ -505,16 +467,13 @@ Watch another ad to unlock:
             "JD keywords already evidenced:",
             "Detailed Analysis",
             "Advanced AI Review",
-            "Diamond Star Analysis",
-            "Gold Star Overview",
-            "Section Scores",
             "Resume Improvement Suggestions",
             "Resume-Specific Interview Questions",
+            "Category Findings:",
             "Role Fit:",
             "World-Class Scorecard:",
-            "Missing skills impact",
-            "Resume Evidence",
-            "Recruiter concerns",
+            "JD Missing Skills Impact:",
+            "Evidence Quality:",
             "Recruiter Red Flags:",
             "Priority Fixes:",
             "High-priority JD signals:",
@@ -522,7 +481,12 @@ Watch another ad to unlock:
             "Missing skills impact:",
             "Bullet quality issues:",
             "Main hiring concern:",
-            "Archetype:"
+            "Archetype:",
+            "Page 1 — Resume Scorecard:",
+            "Page 2 — Candidate Positioning:",
+            "Page 3 — JD Gap Severity:",
+            "Page 4 — Evidence Quality:",
+            "Page 5 — Priority Fixes:"
         )
         headings.forEach { heading ->
             applySpanToMatches(text, heading) { start, end ->
@@ -646,6 +610,8 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val foundKeywords = combinedKeywords.filter { resumeLower.contains(it.lowercase()) }
         val missingKeywords = combinedKeywords.filterNot { resumeLower.contains(it.lowercase()) }
 
+        val gapSeverity = rankGapSeverity(resumeText, targetRole, jobSpecification)
+        val recruiterRedFlags = detectRecruiterRedFlags(resumeText, targetRole, experienceLevel, jobSpecification)
         val atsParserRisks = detectAtsParserRisks(resumeText)
         val impactSignals = extractImpactSignals(resumeText)
         val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
@@ -677,7 +643,11 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
             roleRelevanceScore,
             seniorityAlignmentScore,
             evidenceSpecificityScore,
-            toolProjectScore
+            toolProjectScore,
+            resumeText,
+            jobSpecification,
+            targetRole,
+            experienceLevel
         )
         val sectionOrderIssues = detectSectionOrderIssues(resumeText)
         val missingSections = detectMissingSections(resumeText)
@@ -685,34 +655,7 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val weakestEvidence = (genericClaims + responsibilityNoOutcome + vaguePhrases).firstOrNull() ?: "no major weak claim detected from extracted text"
         val bestSectionToImprove = suggestWhereToAddKeyword((missingJdKeywords + missingRoleKeywords).firstOrNull() ?: "role evidence")
         val jdStatus = if (jobSpecification.isBlank()) "JD: Not attached" else "JD: Attached"
-        val jdStatusNote = if (jobSpecification.isBlank()) {
-            "No job description attached. This review is based on the selected target role."
-        } else {
-            "Job description attached. This review includes target-role and JD matching."
-        }
-        val biggestImprovement =
-            (missingRoleEvidence + genericClaims + responsibilityNoOutcome)
-                .firstOrNull()
-                ?: "Add clearer outcomes to the most role-relevant resume points."
-        val sectionScores = """
-Section Scores
-
-• Keyword Match: $keywordMatchScore/100
-  Measures how many relevant role and JD keywords appear in the resume.
-
-• Measurable Impact: $measurableImpactScore/100
-  Measures whether achievements show numbers, scale, or outcomes.
-
-• Action Verbs: $actionVerbScore/100
-  Measures whether resume points use clear action-oriented language.
-
-• Section Clarity: $sectionClarityScore/100
-  Measures whether standard resume sections are clearly identifiable.
-
-• Role Fit: $roleRelevanceScore/100
-  Measures how closely the resume supports the selected role.
-        """.trimIndent()
-
+        
         val basicFeedback = """
 Overview
 
@@ -882,54 +825,29 @@ JD Match
         }
 
         val fullReport = """
-Detailed Analysis
+Page 1 — Resume Scorecard:
+• Overall Score: $overallScore/100
+• Gap Severity: $gapSeverity
+• JD/Role Match: ${scoreRatingLabel(keywordMatchScore)}
+• Evidence Confidence: ${scoreRatingLabel(evidenceSpecificityScore)}
 
-$sectionScores
+Page 2 — Candidate Positioning:
+• Role Relevance: ${alignmentLabel(roleRelevanceScore)}
+• Seniority Alignment: ${scoreRatingLabel(seniorityAlignmentScore)} — ${seniorityAlignmentNote(resumeText, experienceLevel)}
 
-Role Fit
+Page 3 — JD Gap Severity:
+• Missing Skills: ${foundKeywords.size} of ${combinedKeywords.size} found.
+• Action Items: ${if (missingJdKeywords.isNotEmpty()) "Evidence the missing keywords in your Experience section." else "Your resume aligns well with the JD signals."}
 
-• Role fit:
-  ${alignmentLabel(roleRelevanceScore)}
+Page 4 — Evidence Quality:
+• Specificity: ${scoreRatingLabel(evidenceSpecificityScore)}
+• Measurable Impact: ${scoreRatingLabel(measurableImpactScore)} — ${if (impactSignals.isEmpty()) "Measurable outcomes are not clearly evidenced." else "Some quantified evidence exists."}
+• Recruiter concerns: ${recruiterRedFlags.firstOrNull() ?: "none detected"}
 
-• Experience level match:
-  ${scoreRatingLabel(seniorityAlignmentScore)}
-
-• Explanation:
-  ${seniorityAlignmentNote(resumeText, experienceLevel)}
-
-Resume Evidence
-
-• Strongest evidence:
-  ${shortenLabel(strongestEvidence, 160)}
-
-• Main evidence weakness:
-  ${shortenLabel(weakestEvidence, 160)}
-
-• Measurable impact:
-  ${if (impactSignals.isEmpty()) "Clear measurable outcomes were not detected." else "Some measurable outcomes are present."}
-
-$jdMatchSection
-
-Resume Structure
-
-• Section clarity:
-  $sectionClarityScore/100
-
-• Main structure concern:
-  ${(atsParserRisks + sectionOrderIssues + missingSections)
-      .firstOrNull()
-      ?: "No major resume structure concern detected."}
-
-Priority Fixes
-
-• Strengthen:
-  ${missingKeywords.firstOrNull() ?: "The most important role requirement"}
-
-• Add:
-  A truthful measurable outcome to the most important experience or project point.
-
-• Rewrite:
-  Replace vague lines with a specific task, tool used, and real outcome.
+Page 5 — Priority Fixes:
+• Bullet quality issues: ${bulletQualityIssues.joinToString(", ").ifBlank { "none detected" }}
+• Resume structure: ${atsParserRisks.firstOrNull() ?: "no major issue detected"}
+• $bestSectionToImprove: ${(missingRoleEvidence + genericClaims + responsibilityNoOutcome).firstOrNull() ?: "Add more quantified outcomes."}
         """.trimIndent()
 
         return ResumeReportResult(
@@ -944,7 +862,7 @@ Priority Fixes
         if (lines.isEmpty()) return 25
         val dense = lines.count { line ->
             val lower = line.lowercase()
-            val hasVerb = strongActionVerbs.any { Regex("""\b${Regex.escape(it)}\b""", RegexOption.IGNORE_CASE).containsMatchIn(line) }
+            val hasVerb = strongActionVerbs.any { Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(line) }
             val hasTool = containsMeaningfulTechnicalOrProjectContent(line)
             val hasOutcome = hasMeasurableImpactSignal(line) || resultWords.any { lower.contains(it) }
             listOf(hasVerb, hasTool, hasOutcome).count { it } >= 2
@@ -970,7 +888,7 @@ Priority Fixes
     }
 
     private fun calculateAtsReadabilityScore(resumeText: String): Int {
-        val wordCount = resumeText.split("\\s+".toRegex()).count { it.isNotBlank() }
+        val wordCount = resumeText.split(Regex("\\s+")).count { it.isNotBlank() }
         var score = 55 + detectSectionSignals(resumeText).size * 7
         if (wordCount in 250..1100) score += 10
         if (wordCount < 120) score -= 20
@@ -1042,6 +960,102 @@ Priority Fixes
         return if (score >= 70) "Experience level is supported by ownership, scope, or delivery signals." else "Experience level is partly supported, but leadership, scope, or delivery evidence is thin."
     }
 
+    private fun rankGapSeverity(
+        resumeText: String,
+        targetRole: String,
+        jobSpecification: String
+    ): String {
+        val lower = resumeText.lowercase()
+        val missingCount = (getKeywordsForRole(targetRole) + extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase()))
+            .distinctBy { it.lowercase() }
+            .count { !lower.contains(it.lowercase()) }
+
+        return when {
+            missingCount >= 8 -> "High"
+            missingCount >= 4 -> "Medium"
+            else -> "Low"
+        }
+    }
+
+    private fun detectRecruiterRedFlags(
+        resumeText: String,
+        targetRole: String,
+        experienceLevel: String,
+        jobSpecification: String
+    ): List<String> {
+        val flags = mutableListOf<String>()
+
+        if (resumeText.length < 600) {
+            flags.add("Resume may be too short to show enough role evidence.")
+        }
+
+        if (detectSectionSignals(resumeText).size < 3) {
+            flags.add("Important resume sections are not clearly visible.")
+        }
+
+        if (extractImpactSignals(resumeText).isEmpty()) {
+            flags.add("Measurable outcomes are not clearly shown.")
+        }
+
+        if (extractToolSignals(resumeText, targetRole, jobSpecification).isEmpty()) {
+            flags.add("Tools or skills are not clearly connected to work evidence.")
+        }
+
+        if (detectVaguePhrases(resumeText).isNotEmpty()) {
+            flags.add("Some lines sound vague or generic.")
+        }
+
+        return flags.distinct().take(5)
+    }
+
+    private fun detectAtsParserRisks(resumeText: String): List<String> {
+        val risks = mutableListOf<String>()
+        val lower = resumeText.lowercase()
+
+        if (detectSectionSignals(resumeText).size < 3) {
+            risks.add("Standard resume sections are not clearly detected.")
+        }
+
+        if (!lower.contains("skills")) {
+            risks.add("Skills section is not clearly detected.")
+        }
+
+        if (!lower.contains("experience") && !lower.contains("projects") && !lower.contains("internship")) {
+            risks.add("Experience or Projects section is not clearly detected.")
+        }
+
+        if (resumeText.length > 9000) {
+            risks.add("Resume text may be too long and dense.")
+        }
+
+        return risks.distinct().take(5)
+    }
+
+    private fun diagnoseBulletQuality(resumeText: String): List<String> {
+        val issues = mutableListOf<String>()
+        val weakBullets = findWeakBullets(resumeText)
+        val vague = detectVaguePhrases(resumeText)
+        val noOutcome = detectResponsibilityWithoutOutcome(resumeText)
+
+        if (weakBullets.isNotEmpty()) {
+            issues.add("Some bullets need stronger action and clearer results.")
+        }
+
+        if (vague.isNotEmpty()) {
+            issues.add("Some bullets use vague wording.")
+        }
+
+        if (noOutcome.isNotEmpty()) {
+            issues.add("Some responsibility lines do not show outcomes.")
+        }
+
+        if (extractImpactSignals(resumeText).isEmpty()) {
+            issues.add("Few measurable outcomes are visible.")
+        }
+
+        return issues.distinct().take(5)
+    }
+
     private fun calculateKeywordMatchScore(foundCount: Int, totalCount: Int): Int {
         if (totalCount == 0) return 45
         val ratio = foundCount.toDouble() / totalCount.toDouble()
@@ -1089,7 +1103,7 @@ Priority Fixes
 
     private fun calculateSectionClarityScore(resumeText: String): Int {
         val detectedSections = detectSectionSignals(resumeText)
-        val wordCount = resumeText.split("\\s+".toRegex()).filter { it.isNotBlank() }.size
+        val wordCount = resumeText.split(Regex("\\s+")).filter { it.isNotBlank() }.size
         var score = 30 + (detectedSections.size * 12).coerceAtMost(60)
         if (wordCount in 250..1000) score += 10
         if (wordCount < 120) score -= 15
@@ -1104,63 +1118,47 @@ Priority Fixes
     }
 
     private fun weightedOverallScore(
-        keywordMatchScore: Int,
-        measurableImpactScore: Int,
-        actionVerbScore: Int,
-        structureScore: Int,
-        roleRelevanceScore: Int,
-        seniorityAlignmentScore: Int,
-        evidenceSpecificityScore: Int,
-        toolProjectScore: Int
+        keywordMatch: Int,
+        measurableImpact: Int,
+        actionVerb: Int,
+        structure: Int,
+        roleRelevance: Int,
+        seniorityAlignment: Int,
+        evidenceSpecificity: Int,
+        toolProject: Int,
+        resumeText: String,
+        jobSpecification: String,
+        targetRole: String,
+        experienceLevel: String
     ): Int {
-        val weighted = keywordMatchScore * 0.20 +
-            evidenceSpecificityScore * 0.15 +
-            measurableImpactScore * 0.15 +
-            roleRelevanceScore * 0.15 +
-            structureScore * 0.10 +
-            seniorityAlignmentScore * 0.10 +
-            actionVerbScore * 0.075 +
-            toolProjectScore * 0.075
-        return weighted.roundToInt().coerceIn(0, 100)
-    }
+        val score = (
+            keywordMatch * 0.18 +
+            evidenceSpecificity * 0.16 +
+            measurableImpact * 0.14 +
+            structure * 0.12 +
+            seniorityAlignment * 0.10 +
+            structure * 0.10 + 
+            toolProject * 0.08 +
+            roleRelevance * 0.08 +
+            actionVerb * 0.04
+        ).roundToInt()
 
-    private fun explainMeasurableImpactScore(score: Int, resumeText: String): String {
-        val examples = extractMetricExamples(resumeText)
-        val headline = when {
-            examples.isEmpty() -> "No clear measurable examples detected."
-            score >= 80 -> "Detected measurable examples:"
-            score >= 60 -> "Some measurable examples detected:"
-            else -> "Limited measurable examples detected:"
-        }
-        return if (examples.isEmpty()) headline else headline + "\n" + examples.joinToString("\n") { "• $it" }
-    }
+        var cappedScore = score
+        if (resumeText.length < 300) cappedScore = minOf(cappedScore, 55)
+        if (jobSpecification.isNotBlank() && keywordMatch < 15) cappedScore = minOf(cappedScore, 60)
+        if (measurableImpact < 20) cappedScore = minOf(cappedScore, 78)
+        val lower = resumeText.lowercase()
+        if (!lower.contains("experience") && !lower.contains("project") && !lower.contains("work history")) cappedScore = minOf(cappedScore, 65)
+        val isSenior = experienceLevel.contains("Senior") || experienceLevel.contains("Lead") || experienceLevel.contains("7+") || experienceLevel.contains("4-7")
+        if (isSenior && measurableImpact < 40) cappedScore = minOf(cappedScore, 70)
+        if (structure < 40) cappedScore = minOf(cappedScore, 75)
 
-    private fun explainSectionClarityScore(score: Int, resumeText: String): String {
-        val detected = detectSectionSignals(resumeText)
-        val missing = detectMissingSections(resumeText)
-        return """
-Detected sections:
-${formatExamples(detected, "No standard section headings detected.")}
-
-Missing important sections:
-${formatExamples(missing, "No major missing section detected.")}
-        """.trimIndent()
-    }
-
-    private fun explainActionVerbScore(score: Int, resumeText: String): String {
-        val examples = extractActionVerbExamples(resumeText)
-        val headline = when {
-            examples.isEmpty() -> "No strong action-verb examples detected."
-            score >= 80 -> "Strong action-verb examples detected:"
-            score >= 60 -> "Some action-verb examples detected:"
-            else -> "Limited action-verb examples detected:"
-        }
-        return if (examples.isEmpty()) headline else headline + "\n" + examples.joinToString("\n") { "• $it" }
+        return cappedScore.coerceIn(0, 100)
     }
 
     private fun extractMetricExamples(resumeText: String): List<String> {
         return resumeLines(resumeText)
-            .map { stripContactNoise(it).replace(Regex("""\s+"""), " ").trim() }
+            .map { stripContactNoise(it).replace(Regex("\\s+"), " ").trim() }
             .filter { it.length >= 10 }
             .filter { hasMeasurableImpactSignal(it) }
             .map { shortenLabel(it, 150) }
@@ -1170,27 +1168,27 @@ ${formatExamples(missing, "No major missing section detected.")}
 
     private fun stripContactNoise(text: String): String {
         return text
-            .replace(Regex("""\b[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}\b"""), " ")
-            .replace(Regex("""https?://\S+|www\.\S+""", RegexOption.IGNORE_CASE), " ")
-            .replace(Regex("""\b(?:linkedin|github)\.com/\S+""", RegexOption.IGNORE_CASE), " ")
-            .replace(Regex("""(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)"""), " ")
-            .replace(Regex("""\b\d{7,}\b"""), " ")
-            .replace(Regex("""\b(?:19|20)\d{2}\b"""), " ")
+            .replace(Regex("\\b[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}\\b"), " ")
+            .replace(Regex("https?://\\S+|www\\.\\S+", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("\\b(?:linkedin|github)\\.com/\\S+", RegexOption.IGNORE_CASE), " ")
+            .replace(Regex("(?<!\\w)(?:\\+?\\d[\\d\\s().-]{7,}\\d)(?!\\w)"), " ")
+            .replace(Regex("\\b\\d{7,}\\b"), " ")
+            .replace(Regex("\\b(?:19|20)\\d{2}\\b"), " ")
     }
 
     private fun hasMeasurableImpactSignal(line: String): Boolean {
         val cleaned = stripContactNoise(line)
         val lower = cleaned.lowercase()
-        val hasNumber = Regex("""\b\d+(?:[.,]\d+)?\+?\b""").containsMatchIn(lower)
-        val hasPercentage = Regex("""\b\d+(?:[.,]\d+)?\s*%""").containsMatchIn(lower)
-        val hasCurrency = Regex("""[$₹€£]\s*\d|\b\d+(?:[.,]\d+)?\s*(?:usd|inr|eur|gbp|dollars?|rupees?)\b""", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
+        val hasNumber = Regex("\\b\\d+(?:[.,]\\d+)?\\+?\\b").containsMatchIn(lower)
+        val hasPercentage = Regex("\\b\\d+(?:[.,]\\d+)?\\s*%").containsMatchIn(lower)
+        val hasCurrency = Regex("[$₹€£]\\s*\\d|\\b\\d+(?:[.,]\\d+)?\\s*(?:usd|inr|eur|gbp|dollars?|rupees?)", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
         val impactUnits = listOf(
             "users", "user", "customers", "customer", "clients", "client", "hours", "hour", "days", "day", "weeks", "week", "months", "month",
             "leads", "lead", "sales", "projects", "project", "reports", "report", "dashboards", "dashboard", "revenue", "cost", "budget"
         )
         val impactWords = listOf("improved", "reduced", "increased", "saved", "optimized", "accelerated", "streamlined", "delivered", "resolved")
         val unitPattern = impactUnits.joinToString("|")
-        val hasImpactUnitNearNumber = Regex("""\b\d+(?:[.,]\d+)?\+?\s*(?:$unitPattern)\b|\b(?:$unitPattern)\b\W{0,24}\b\d+(?:[.,]\d+)?\+?\b""", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
+        val hasImpactUnitNearNumber = Regex("\\b\\d+(?:[.,]\\d+)?\\+?\\s*(?:$unitPattern)\\b|\\b(?:$impactUnits)\\b\\W{0,24}\\b\\d+(?:[.,]\\d+)?\\+?\\b", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
         val hasNumberAndImpactWord = hasNumber && impactWords.any { lower.contains(it) }
         return hasPercentage || hasCurrency || hasImpactUnitNearNumber || hasNumberAndImpactWord
     }
@@ -1201,10 +1199,10 @@ ${formatExamples(missing, "No major missing section detected.")}
         val detectedKeyword = roleAndJdKeywords
             .filter { it.length >= 3 }
             .firstOrNull { lower.contains(it.lowercase()) }
-        val hasActionVerb = strongActionVerbs.any { Regex("""\b${Regex.escape(it)}\b""", RegexOption.IGNORE_CASE).containsMatchIn(bullet) }
+        val hasActionVerb = strongActionVerbs.any { Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE).containsMatchIn(bullet) }
         val hasMetric = hasMeasurableImpactSignal(bullet)
         val looksGeneric = lower.startsWith("worked on") || lower.startsWith("responsible for") || lower.startsWith("helped") ||
-            lower.split(Regex("""\s+""")).size < 8
+            lower.split(Regex("\\s+")).size < 8
         val advice = when {
             detectedKeyword != null -> "Make the tool usage more specific: explain what you built, changed, tested, analyzed, or delivered using $detectedKeyword."
             hasActionVerb -> "Keep the strong action verb, but add scope/context: who used it, what system/process it affected, and what changed."
@@ -1216,7 +1214,7 @@ ${formatExamples(missing, "No major missing section detected.")}
     }
 
     private fun extractActionVerbExamples(resumeText: String): List<String> {
-        val regex = Regex("""\b(${strongActionVerbs.joinToString("|")})\b""", RegexOption.IGNORE_CASE)
+        val regex = Regex("\\b(${strongActionVerbs.joinToString("|")})\\b", RegexOption.IGNORE_CASE)
         return resumeLines(resumeText).filter { regex.containsMatchIn(it) }.map { shortenLabel(it, 150) }.distinct().take(5)
     }
 
@@ -1299,16 +1297,40 @@ ${formatExamples(missing, "No major missing section detected.")}
         .distinct()
         .take(5)
 
-    private fun resumeLines(resumeText: String): List<String> = resumeText
-        .split('\n', '•', '●', '–', '-')
-        .map { it.replace(Regex("\\s+"), " ").trim() }
-        .filter { it.isNotBlank() }
-        .filterNot { isBareStopwordFragment(it) }
+    private fun resumeLines(text: String): List<String> {
+        if (text.isBlank()) return emptyList()
+
+        val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        val reconstructed = mutableListOf<String>()
+        var currentBuffer = StringBuilder()
+
+        for (line in lines) {
+            val isBulletStart = line.startsWith("•") || line.startsWith("*")
+            val firstChar = line.firstOrNull()
+            val isLowercaseStart = firstChar?.isLowerCase() ?: false
+
+            val isContinuation = currentBuffer.isNotEmpty() && isLowercaseStart && !isBulletStart
+
+            if (isContinuation) {
+                currentBuffer.append(" ").append(line)
+            } else {
+                if (currentBuffer.isNotEmpty()) {
+                    reconstructed.add(currentBuffer.toString())
+                }
+                currentBuffer = StringBuilder(line)
+            }
+        }
+        if (currentBuffer.isNotEmpty()) {
+            reconstructed.add(currentBuffer.toString())
+        }
+
+        return reconstructed.filterNot { isBareStopwordFragment(it) }
+    }
 
     private fun isBareStopwordFragment(line: String): Boolean {
         val normalized = line.lowercase()
-            .replace(Regex("""[^a-z]"""), " ")
-            .replace(Regex("""\s+"""), " ")
+            .replace(Regex("[^a-z]"), " ")
+            .replace(Regex("\\s+"), " ")
             .trim()
         return normalized in setOf("and", "or", "with", "for", "to", "in", "on", "of", "the", "a", "an")
     }
@@ -1326,7 +1348,7 @@ ${formatExamples(missing, "No major missing section detected.")}
             "api", "sql", "python", "java", "kotlin", "android", "dashboard", "project", "app", "database", "analytics",
             "excel", "tableau", "power bi", "figma", "jira", "agile", "scrum", "crm", "campaign", "research", "prototype"
         )
-        return meaningfulTerms.any { lower.contains(it) } || Regex("""\d|%|\$""").containsMatchIn(line)
+        return meaningfulTerms.any { lower.contains(it) } || Regex("\\d|%|\\$").containsMatchIn(line)
     }
 
     private fun looksLikeSplitSentenceFragment(line: String): Boolean {
@@ -1342,78 +1364,174 @@ ${formatExamples(missing, "No major missing section detected.")}
     private fun getKeywordsForRole(targetRole: String): List<String> {
         val roleLower = targetRole.lowercase()
         return when {
-            roleLower.contains("software engineer") -> listOf(
-                "Java", "Kotlin", "Python", "JavaScript", "TypeScript", "C++", "Data Structures", "Algorithms",
-                "Object-Oriented Programming", "System Design", "REST API", "SQL", "Git", "Unit Testing",
-                "Integration Testing", "Debugging", "CI/CD", "Docker", "Cloud Computing", "Agile",
-                "Performance Optimization", "Security", "Documentation"
+            roleLower.contains("android") -> listOf(
+                "Kotlin", "Android SDK", "Jetpack Compose", "Coroutines", "Flow", "MVVM", "Room", "Retrofit", "Dagger Hilt", "Clean Architecture",
+                "Unit Testing", "Espresso", "Google Play Store", "Firebase", "CI/CD", "Git", "Material Design", "Performance Tuning", "Memory Management",
+                "Custom Views", "WorkManager", "ViewModel", "LiveData", "Navigation Component", "REST API", "JSON", "SQLite"
             )
-            roleLower.contains("android") -> listOf("Kotlin", "Java", "Android", "Jetpack", "XML", "REST API", "Git", "Unit Testing", "Debugging", "Material Design", "SQLite", "Room", "Gradle", "Play Store")
-            roleLower.contains("ios") -> listOf("Swift", "SwiftUI", "UIKit", "iOS", "Xcode", "REST API", "Git", "Unit Testing", "Debugging", "Core Data", "App Store", "MVC", "MVVM")
-            roleLower.contains("backend") -> listOf("Java", "Python", "Node.js", "REST API", "SQL", "NoSQL", "Docker", "Cloud Computing", "Authentication", "Microservices", "System Design", "Git", "CI/CD", "Unit Testing")
-            roleLower.contains("frontend") -> listOf("JavaScript", "TypeScript", "React", "HTML", "CSS", "REST API", "UI", "Responsive Design", "Accessibility", "Git", "Testing", "Performance Optimization")
-            roleLower.contains("full-stack") || roleLower.contains("full stack") -> listOf("JavaScript", "TypeScript", "React", "Node.js", "REST API", "SQL", "Git", "Docker", "Cloud Computing", "Testing", "Frontend", "Backend", "System Design")
-            roleLower.contains("machine learning") || roleLower.contains("ai engineer") -> listOf("Python", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "NLP", "Model Evaluation", "Data Preprocessing", "MLOps", "SQL", "Statistics", "Cloud Computing")
-            roleLower.contains("data engineer") -> listOf("SQL", "Python", "ETL", "Data Pipelines", "Spark", "Airflow", "Data Warehousing", "Cloud Computing", "Docker", "Data Modeling", "Big Data", "Git")
-            roleLower.contains("data scientist") -> listOf("Python", "SQL", "Statistics", "Machine Learning", "Data Visualization", "Pandas", "NumPy", "Model Evaluation", "Experimentation", "Dashboard", "Business Insights")
-            roleLower.contains("data analyst") -> listOf("SQL", "Excel", "Python", "Power BI", "Tableau", "data cleaning", "data visualization", "dashboard", "KPI", "statistics", "reporting", "business insights", "data modeling", "ETL", "trend analysis")
-            roleLower.contains("devops") || roleLower.contains("site reliability") || roleLower.contains("sre") -> listOf("CI/CD", "Docker", "Kubernetes", "Linux", "Cloud Computing", "AWS", "Azure", "GCP", "Monitoring", "Incident Response", "Terraform", "Scripting", "Automation")
-            roleLower.contains("qa automation") || roleLower.contains("sdet") -> listOf("Test Automation", "Selenium", "Appium", "Unit Testing", "Integration Testing", "API Testing", "Regression Testing", "Java", "Python", "CI/CD", "Bug Tracking", "Test Cases")
-            roleLower.contains("embedded") -> listOf("C", "C++", "Embedded C", "Microcontrollers", "RTOS", "Firmware", "Debugging", "Hardware Interfaces", "UART", "SPI", "I2C", "Testing")
-            roleLower.contains("cybersecurity") -> listOf("Security", "Network Security", "SIEM", "Incident Response", "Vulnerability Assessment", "Risk Analysis", "SOC", "Threat Detection", "Linux", "Python", "Compliance")
-            roleLower.contains("game") -> listOf("Unity", "Unreal Engine", "C#", "C++", "Game Design", "Gameplay Programming", "Physics", "Optimization", "Debugging", "Git", "3D Math")
-            roleLower.contains("business analyst") -> listOf("requirements gathering", "stakeholder management", "business process analysis", "user stories", "UAT", "Jira", "Agile", "SQL", "Excel", "Power BI", "Tableau", "KPI", "gap analysis", "process improvement", "BRD", "FRD")
-            roleLower.contains("marketing") -> listOf("SEO", "SEM", "Google Analytics", "Google Ads", "Meta Ads", "campaign management", "conversion rate", "CTR", "CPC", "CPA", "ROAS", "lead generation", "A/B testing", "email marketing", "landing page optimization")
-            roleLower.contains("product manager") -> listOf("product roadmap", "user research", "market research", "stakeholder management", "PRD", "user stories", "analytics", "A/B testing", "KPI", "go-to-market", "prioritization", "customer feedback", "feature planning", "product strategy")
-            roleLower.contains("finance") -> listOf("financial analysis", "Excel", "financial modeling", "forecasting", "budgeting", "variance analysis", "valuation", "reporting", "Power BI", "risk analysis", "P&L", "cash flow", "cost analysis", "scenario analysis")
-            roleLower.contains("sales") || roleLower.contains("business development") -> listOf("lead generation", "CRM", "sales pipeline", "cold calling", "client relationship management", "negotiation", "sales targets", "revenue growth", "B2B sales", "B2C sales", "customer acquisition", "account management", "conversion rate", "partnerships")
-            roleLower.contains("operations") -> listOf("process improvement", "operations management", "workflow optimization", "Excel", "Power BI", "KPI", "cost reduction", "supply chain", "inventory management", "vendor management", "reporting", "root cause analysis", "SOP", "quality control")
-            roleLower.contains("hr") || roleLower.contains("recruiter") || roleLower.contains("talent acquisition") -> listOf("recruitment", "talent acquisition", "onboarding", "employee engagement", "HR operations", "payroll", "performance management", "HRIS", "sourcing", "screening", "interview coordination", "employee relations", "training")
-            roleLower.contains("ux") || roleLower.contains("ui") -> listOf("user research", "wireframing", "prototyping", "Figma", "usability testing", "design systems", "user flows", "interaction design", "visual design", "accessibility", "information architecture", "customer journey", "A/B testing")
-            roleLower.contains("project manager") -> listOf("project planning", "stakeholder management", "risk management", "Agile", "Scrum", "Jira", "timeline management", "budget management", "resource allocation", "cross-functional collaboration", "status reporting", "delivery management", "scope management")
-            roleLower.contains("research assistant") || roleLower.contains("researcher") -> listOf("research", "literature review", "data collection", "data analysis", "Excel", "statistics", "report writing", "experiment design", "documentation", "presentation", "survey", "qualitative research")
-            else -> listOf("communication", "analysis", "problem solving", "project management", "stakeholder management", "reporting", "Excel", "presentation", "collaboration", "process improvement")
+            roleLower.contains("ios") -> listOf(
+                "Swift", "SwiftUI", "UIKit", "Combine", "Core Data", "XCTest", "App Store Connect", "CocoaPods", "Swift Package Manager", "AVFoundation",
+                "Core Animation", "GCD", "Operations", "Auto Layout", "MVVM", "VIPER", "Clean Architecture", "Unit Testing", "UI Testing", "Firebase",
+                "Git", "REST API", "JSON", "Memory Management", "Push Notifications", "Bluetooth", "Localization"
+            )
+            roleLower.contains("backend") -> listOf(
+                "Java", "Spring Boot", "Microservices", "REST API", "gRPC", "SQL", "NoSQL", "PostgreSQL", "MongoDB", "Redis", "Kafka", "RabbitMQ",
+                "Docker", "Kubernetes", "AWS", "Azure", "GCP", "JUnit", "Unit Testing", "Integration Testing", "System Design", "Scalability",
+                "Performance Tuning", "Security", "OAuth2", "Hibernate", "JPA", "Node.js", "Express", "Python", "Django", "Go"
+            )
+            roleLower.contains("frontend") -> listOf(
+                "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "HTML5", "CSS3", "SASS", "Tailwind CSS", "Redux", "Context API",
+                "Next.js", "Webpack", "Vite", "Responsive Design", "Web Accessibility", "Unit Testing", "Jest", "Cypress", "Git", "REST API",
+                "GraphQL", "State Management", "Performance Optimization", "Browser Compatibility", "UI/UX Principles"
+            )
+            roleLower.contains("full-stack") -> listOf(
+                "JavaScript", "TypeScript", "React", "Node.js", "Express", "SQL", "PostgreSQL", "MongoDB", "REST API", "GraphQL", "HTML5", "CSS3",
+                "AWS", "Docker", "Git", "CI/CD", "Unit Testing", "System Design", "Microservices", "Responsive Design", "Redux", "Next.js",
+                "Spring Boot", "Java", "Python", "Database Design", "Security", "Deployment"
+            )
+            roleLower.contains("ml") || roleLower.contains("machine learning") -> listOf(
+                "Python", "PyTorch", "TensorFlow", "Scikit-Learn", "Keras", "Pandas", "NumPy", "Deep Learning", "Neural Networks", "NLP",
+                "Computer Vision", "Reinforcement Learning", "Feature Engineering", "Model Validation", "MLOps", "SQL", "Spark", "Hadoop",
+                "AWS SageMaker", "Data Visualization", "Mathematics", "Statistics", "Linear Algebra", "Calculus", "Big Data", "Data Mining"
+            )
+            roleLower.contains("ai engineer") -> listOf(
+                "Python", "LLMs", "Generative AI", "LangChain", "OpenAI API", "Hugging Face", "Vector Databases", "Prompt Engineering", "NLP",
+                "Deep Learning", "PyTorch", "TensorFlow", "MLOps", "RAG", "Fine-tuning", "Model Deployment", "Cloud Computing", "SQL", "Git",
+                "Research", "Algorithm Design", "Ethics in AI", "API Integration", "Scalability"
+            )
+            roleLower.contains("data engineer") -> listOf(
+                "Python", "SQL", "Spark", "Hadoop", "ETL", "ELT", "Data Warehousing", "Snowflake", "BigQuery", "Redshift", "Airflow", "Kafka",
+                "NoSQL", "Database Design", "Cloud Computing", "AWS", "Azure", "GCP", "Data Governance", "Data Quality", "Distributed Systems",
+                "Docker", "Kubernetes", "Terraform", "CI/CD"
+            )
+            roleLower.contains("devops") -> listOf(
+                "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Terraform", "Ansible", "CI/CD", "Jenkins", "GitHub Actions", "GitLab CI",
+                "Linux", "Shell Scripting", "Python", "Monitoring", "Prometheus", "Grafana", "Logging", "ELK Stack", "Security", "Network",
+                "Cloud Computing", "Infrastructure as Code", "Site Reliability", "Automation"
+            )
+            roleLower.contains("site reliability") || roleLower.contains("sre") -> listOf(
+                "Python", "Go", "Linux", "Shell Scripting", "Kubernetes", "Docker", "AWS", "Azure", "GCP", "Terraform", "Monitoring",
+                "Prometheus", "Grafana", "Incident Management", "Error Budgets", "SLAs", "SLOs", "SLIs", "Automation", "System Design",
+                "Networking", "Scalability", "Reliability Engineering", "Distributed Systems"
+            )
+            roleLower.contains("qa automation") -> listOf(
+                "Java", "Python", "Selenium", "Appium", "JUnit", "TestNG", "Pytest", "Cypress", "Playwright", "API Testing", "Postman",
+                "RestAssured", "CI/CD", "Jenkins", "Git", "Test Automation", "Agile", "Defect Tracking", "Jira", "Performance Testing",
+                "Mobile Testing", "Regression Testing", "SDET", "Software Quality Assurance"
+            )
+            roleLower.contains("embedded") -> listOf(
+                "C", "C++", "RTOS", "Microcontrollers", "ARM", "Firmware", "Device Drivers", "Embedded Linux", "I2C", "SPI", "UART",
+                "Assembly", "Oscilloscopes", "Logic Analyzers", "PCB Design", "Real-time Systems", "Memory Management", "Optimization",
+                "Hardware Abstraction", "Low-level Programming", "Debugging", "Sensors", "Protocol Design"
+            )
+            roleLower.contains("security") -> listOf(
+                "Cybersecurity", "Network Security", "Penetration Testing", "Vulnerability Assessment", "SIEM", "IDS/IPS", "Cryptography",
+                "OWASP", "Identity Management", "Cloud Security", "Firewalls", "SOC", "Incident Response", "Compliance", "SOC2", "ISO 27001",
+                "Python", "PowerShell", "Linux Security", "Application Security", "Risk Management"
+            )
+            roleLower.contains("game developer") -> listOf(
+                "C++", "C#", "Unity", "Unreal Engine", "Game Physics", "3D Modeling", "Shaders", "Computer Graphics", "Math for Games",
+                "Animation", "Game Mechanics", "Optimization", "Networking for Games", "AI for Games", "Mobile Game Development",
+                "DirectX", "OpenGL", "Vulkan", "VR/AR", "Gameplay Programming"
+            )
+            roleLower.contains("data analyst") -> listOf(
+                "SQL", "Python", "R", "Excel", "Tableau", "Power BI", "Data Visualization", "Statistics", "Data Cleaning", "Reporting",
+                "A/B Testing", "KPIs", "Dashboarding", "Business Intelligence", "Google Analytics", "Data Mining", "Predictive Analytics",
+                "Market Research", "Communication", "Presentation Skills", "Data Governance"
+            )
+            roleLower.contains("data scientist") -> listOf(
+                "Python", "R", "SQL", "Machine Learning", "Deep Learning", "Statistics", "Mathematics", "Feature Engineering", "Pandas",
+                "NumPy", "Scikit-Learn", "PyTorch", "TensorFlow", "Data Visualization", "Big Data", "Spark", "Cloud Computing",
+                "Model Deployment", "Experimental Design", "A/B Testing", "NLP", "Problem Solving"
+            )
+            roleLower.contains("business analyst") -> listOf(
+                "Requirements Gathering", "Stakeholder Management", "Business Process Modeling", "User Stories", "UAT", "Jira", "Agile",
+                "SQL", "Excel", "Data Analysis", "Gap Analysis", "BRDs", "FRDs", "Process Improvement", "Product Backlog", "Facilitation",
+                "Documentation", "Business Strategy", "SWOT Analysis"
+            )
+            roleLower.contains("product manager") -> listOf(
+                "Product Strategy", "Product Roadmap", "User Research", "Market Analysis", "Prioritization", "Stakeholder Management",
+                "Agile", "Scrum", "Jira", "KPIs", "Analytics", "A/B Testing", "User Stories", "PRDs", "Go-to-Market Strategy", "Product Lifecycle",
+                "Customer Feedback", "Design Thinking", "Financial Modeling"
+            )
+            roleLower.contains("project manager") -> listOf(
+                "Project Planning", "Budgeting", "Risk Management", "Stakeholder Management", "Agile", "Scrum", "Waterfall", "Jira",
+                "Resource Allocation", "Timeline Management", "Scope Management", "Change Management", "Status Reporting", "Team Leadership",
+                "Vendor Management", "PMP", "Prince2", "Delivery Management", "Problem Solving"
+            )
+            roleLower.contains("ux") || roleLower.contains("ui") -> listOf(
+                "Figma", "Adobe XD", "User Research", "Wireframing", "Prototyping", "Information Architecture", "Visual Design",
+                "Interaction Design", "Design Systems", "Usability Testing", "Accessibility", "User Flows", "Design Thinking",
+                "Heuristic Evaluation", "Responsive Design", "Typography", "Color Theory", "Portfolio"
+            )
+            roleLower.contains("finance") -> listOf(
+                "Financial Modeling", "Financial Analysis", "Forecasting", "Budgeting", "P&L Management", "Excel", "VBA", "Power BI",
+                "Valuation", "Accounting", "Risk Management", "Corporate Finance", "Investment Analysis", "ERP Systems", "SAP",
+                "Financial Reporting", "Variance Analysis", "Strategic Planning"
+            )
+            roleLower.contains("operations") -> listOf(
+                "Process Improvement", "Supply Chain", "Inventory Management", "Logistics", "Operations Management", "Lean Six Sigma",
+                "Project Management", "Data Analysis", "KPIs", "Cost Reduction", "Vendor Management", "SOPs", "Quality Control",
+                "Workflow Optimization", "Excel", "Strategic Planning", "Change Management"
+            )
+            roleLower.contains("sales") -> listOf(
+                "Sales Pipeline", "Lead Generation", "CRM", "Salesforce", "Account Management", "B2B Sales", "Negotiation", "Cold Calling",
+                "Closing Deals", "Market Research", "Business Development", "Customer Relationship Management", "Revenue Growth",
+                "Presentation Skills", "Communication", "Sales Strategy"
+            )
+            roleLower.contains("marketing") -> listOf(
+                "SEO", "SEM", "Google Analytics", "Google Ads", "Content Marketing", "Social Media Marketing", "Email Marketing",
+                "Brand Management", "Market Research", "CRM", "Campaign Management", "A/B Testing", "Conversion Optimization",
+                "Copywriting", "Digital Strategy", "KPIs", "Data Analysis"
+            )
+            roleLower.contains("hr") || roleLower.contains("recruiter") -> listOf(
+                "Recruitment", "Talent Acquisition", "Sourcing", "Applicant Tracking Systems", "ATS", "Employee Engagement",
+                "Onboarding", "Performance Management", "HR Policies", "Labor Relations", "Compensation & Benefits", "HRIS",
+                "Interviewing", "Conflict Resolution", "Organizational Development", "Diversity & Inclusion"
+            )
+            roleLower.contains("research") -> listOf(
+                "Research Methodology", "Data Collection", "Statistical Analysis", "Scientific Writing", "Literature Review",
+                "Project Management", "Grant Writing", "Data Visualization", "Python", "R", "SQL", "Experimental Design",
+                "Critical Thinking", "Academic Publishing", "Lab Management"
+            )
+            else -> listOf(
+                "Communication", "Problem Solving", "Teamwork", "Project Management", "Time Management", "Analytical Thinking",
+                "Adaptability", "Leadership", "Organization", "Customer Service", "Technical Literacy", "Reporting", "Documentation",
+                "Strategic Planning", "Presentation Skills", "Critical Thinking"
+            )
         }
     }
 
-    private fun extractSimpleKeywordsFromJobSpec(jobSpecLower: String): List<String> {
-        if (jobSpecLower.isBlank()) return emptyList()
-        val possibleKeywords = listOf("sql", "excel", "python", "power bi", "tableau", "google analytics", "seo", "sem", "google ads", "meta ads", "stakeholder management", "requirements gathering", "user stories", "uat", "jira", "agile", "scrum", "rest api", "git", "kotlin", "java", "campaign management", "lead generation", "a/b testing", "conversion rate", "ctr", "cpc", "cpa", "roas", "financial modeling", "forecasting", "budgeting", "dashboard", "reporting", "market research", "product roadmap", "communication", "project management", "crm", "sales pipeline", "cold calling", "client relationship management", "recruitment", "talent acquisition", "onboarding", "figma", "wireframing", "prototyping", "usability testing", "process improvement", "operations management", "workflow optimization", "supply chain", "vendor management", "risk management")
-        val normalized = jobSpecLower.replace(Regex("""[^a-z0-9+/\s.-]"""), " ").replace(Regex("""\s+"""), " ").trim()
-        val knownKeywords = possibleKeywords.filter { normalized.contains(it) }
-        val stopwords = setOf(
-            "the", "and", "or", "with", "for", "from", "this", "that", "role", "candidate", "experience", "years", "year", "team", "work", "ability", "strong", "good", "excellent", "required", "preferred", "plus", "etc",
-            "must", "have", "will", "you", "our", "your", "about", "across", "responsibilities", "responsibility", "requirements", "requirement", "skills", "skill", "knowledge", "looking", "seeking", "join", "company", "business",
-            "manage", "support", "using", "hands", "proven", "nice", "bonus", "degree", "bachelor", "master", "field", "related", "environment", "fast", "paced", "written", "verbal", "highly", "detail", "oriented"
-        )
-        val technicalNouns = setOf(
-            "api", "apis", "sql", "python", "java", "kotlin", "javascript", "typescript", "react", "node", "android", "aws", "azure", "gcp", "tableau", "figma", "jira", "agile", "scrum", "analytics", "dashboard", "dashboards", "database", "databases", "crm", "seo", "sem", "excel", "power", "bi", "testing", "automation", "forecasting", "budgeting", "reporting", "research", "roadmap", "pipeline", "recruitment", "onboarding", "prototype", "prototyping"
-        )
-        fun normalizeToken(token: String): String = token.trim('.', '-', '/')
-        fun isUsefulToken(token: String): Boolean {
-            return token.length >= 3 && token.none { it.isDigit() } && token !in stopwords
-        }
-        fun hasTechnicalToken(value: String): Boolean = value.split(" ").any { token -> token in technicalNouns || token.removeSuffix("s") in technicalNouns }
+    private fun extractSimpleKeywordsFromJobSpec(jobSpec: String): List<String> {
+        if (jobSpec.isBlank()) return emptyList()
+        val jobSpecLower = jobSpec.lowercase()
+        
+        val knownKeywords = listOf(
+            "sql", "python", "java", "kotlin", "swift", "javascript", "typescript", "react", "node", "aws", "azure", "gcp",
+            "docker", "kubernetes", "terraform", "jira", "agile", "scrum", "excel", "tableau", "power bi", "figma",
+            "seo", "sem", "crm", "sap", "salesforce", "pmp", "r", "spark", "hadoop", "airflow", "kafka", "microservices"
+        ).filter { jobSpecLower.contains(it) }
 
-        val rawTokens = normalized.split(Regex("""\s+""")).map(::normalizeToken).filter { it.isNotBlank() }
-        val usefulTokens = rawTokens.filter(::isUsefulToken)
-        val wordKeywords = usefulTokens.groupingBy { it }.eachCount()
+        val capitalizedTokens = Regex("\\b[A-Z][a-zA-Z0-9+#.]{1,}\\b").findAll(jobSpec)
+            .map { it.value }
+            .filter { it.lowercase() !in setOf("the", "and", "this", "your", "join", "team", "with", "from") }
+            .distinct()
             .toList()
-            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenByDescending { if (hasTechnicalToken(it.first)) 1 else 0 }.thenBy { it.first })
-            .map { it.first }
 
-        val phraseKeywords = rawTokens.zipWithNext()
-            .mapNotNull { (first, second) ->
-                if (isUsefulToken(first) && isUsefulToken(second)) "$first $second" else null
+        val triggers = listOf("required", "must have", "experience with", "proficient in", "responsible for", "familiarity with", "expertise in", "skills in")
+        val extractedPhrases = mutableListOf<String>()
+        for (trigger in triggers) {
+            val pattern = Regex("$trigger\\s+([^,.;\\n]{2,40})", RegexOption.IGNORE_CASE)
+            pattern.findAll(jobSpec).forEach { match ->
+                val phrase = match.groupValues[1].trim()
+                if (phrase.split(" ").size in 2..4) {
+                    extractedPhrases.add(phrase)
+                }
             }
-            .filterNot { phrase -> knownKeywords.any { it.equals(phrase, ignoreCase = true) } }
-            .groupingBy { it }.eachCount()
-            .toList()
-            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenByDescending { if (hasTechnicalToken(it.first)) 1 else 0 }.thenBy { it.first })
-            .map { it.first }
+        }
 
-        val dynamicKeywords = (phraseKeywords + wordKeywords).distinctBy { it.lowercase() }.take(15)
-        return (knownKeywords + dynamicKeywords).distinctBy { it.lowercase() }.take(25)
+        val allSignals = (knownKeywords + capitalizedTokens + extractedPhrases).distinctBy { it.lowercase() }
+        return allSignals.take(30)
     }
 
     private fun suggestWhereToAddKeyword(keyword: String): String {
@@ -1464,7 +1582,18 @@ ${formatExamples(missing, "No major missing section detected.")}
 
     private fun bulletList(items: List<String>, emptyText: String): String = if (items.isEmpty()) "• $emptyText" else items.joinToString("\n") { "• $it" }
     private fun formatExamples(items: List<String>, emptyText: String): String = if (items.isEmpty()) "• $emptyText" else items.joinToString("\n") { "• $it" }
-    private fun shortenLabel(value: String, maxLength: Int): String = if (value.length <= maxLength) value else value.take(maxLength - 1).trimEnd() + "…"
+    
+    private fun shortenLabel(value: String, maxLength: Int): String {
+        if (value.length <= maxLength) return value
+        val truncated = value.take(maxLength - 1)
+        val lastSpace = truncated.lastIndexOf(' ')
+        return if (lastSpace != -1 && lastSpace > maxLength / 2) {
+            truncated.take(lastSpace).trimEnd() + "…"
+        } else {
+            truncated.trimEnd() + "…"
+        }
+    }
+
     private fun scoreRatingLabel(score: Int): String = when {
         score >= 85 -> "Excellent"
         score >= 70 -> "Good"
