@@ -145,6 +145,9 @@ class ResumeReportActivity : AppCompatActivity() {
                     startAdvancedLoadingAnimation(textAdvancedLlmReview)
                     textAdvancedLockedMessage.visibility = View.GONE
                     btnUnlockAdvancedLlmReview.visibility = View.GONE
+                    textAdvancedLlmReview.visibility = View.VISIBLE
+                    headerAdvancedReview.visibility = View.VISIBLE
+                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
                     requestAdvancedAiReview(resumeText, targetRole, experienceLevel, jobSpecification, textAdvancedLlmReview)
                 }
                 .setNegativeButton("Cancel", null)
@@ -447,8 +450,6 @@ class ResumeReportActivity : AppCompatActivity() {
         val builder = SpannableStringBuilder(text)
         val headings = listOf(
             "Overview:",
-            "Category signals:",
-            "Top fixes:",
             "Keyword Match:",
             "Measurable Details:",
             "Strong Action Verbs:",
@@ -657,88 +658,170 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val jdStatus = if (jobSpecification.isBlank()) "JD: Not attached" else "JD: Attached"
         
         val basicFeedback = """
-Overview:
-• Resume reviewed for $targetRole at $experienceLevel level.
-• Overall fit: ${alignmentLabel(overallScore)}.
-• Biggest issue: ${(missingRoleEvidence + genericClaims + responsibilityNoOutcome).firstOrNull() ?: "add more concrete outcomes to the strongest role-relevant bullets."}
+Overview
 
-Category signals:
-• JD/Role Match: ${scoreRatingLabel(keywordMatchScore)}
-• Evidence Density: ${scoreRatingLabel(evidenceDensityScore)}
-• Measurable Impact: ${scoreRatingLabel(measurableImpactScore)}
-• Seniority Alignment: ${scoreRatingLabel(seniorityAlignmentScore)}
-• ATS Readability: ${scoreRatingLabel(atsReadabilityScore)}
+• Overall fit:
+  ${alignmentLabel(overallScore)}
 
-Top fixes:
-1. Add missing role/JD evidence in $bestSectionToImprove without inventing skills.
-2. Attach tools, scope, and outcomes to the most important experience or project bullets.
-3. Replace vague claims with specific action, context, and result.
+• Strongest evidence:
+  ${shortenLabel(strongestEvidence, 160)}
+
+• Biggest improvement:
+  ${shortenLabel(biggestImprovement, 160)}
+
+• JD status:
+  $jdStatusNote
         """.trimIndent()
 
-        val missingKeywordsHook = if (missingKeywords.isEmpty()) {
-            "Your resume covers the main keywords detected for this role/JD."
-        } else {
-            "Possible missing keywords: ${missingKeywords.take(3).joinToString(", ")}. Watch an ad to see the full keyword and gap analysis."
+        val missingKeywordsHook = when {
+            missingKeywords.isEmpty() && jobSpecification.isBlank() ->
+                "Your resume covers the main keywords detected for the selected role."
+
+            missingKeywords.isEmpty() ->
+                "Your resume covers the main keywords detected for the selected role and JD."
+
+            jobSpecification.isBlank() ->
+                """
+Keyword preview
+
+${missingKeywords.take(3).joinToString("\n") { "• $it" }}
+
+• Unlock Gold Star Analysis for the complete role-keyword review.
+                """.trimIndent()
+
+            else ->
+                """
+Keyword preview
+
+${missingKeywords.take(3).joinToString("\n") { "• $it" }}
+
+• Unlock Gold Star Analysis for the complete role and JD keyword review.
+                """.trimIndent()
         }
 
         val overview = """
-Your resume shows ${alignmentLabel(overallScore).lowercase()} for $targetRole. Strongest proof: ${shortenLabel(strongestEvidence, 140)}. Biggest issue: ${shortenLabel(weakestEvidence, 140)}. Improve fit by adding JD evidence, measurable outcomes, and clearer ownership where they are truthfully supported.
+Gold Star Overview
+
+• Overall fit:
+  ${alignmentLabel(overallScore)}
+
+• Strongest evidence:
+  ${shortenLabel(strongestEvidence, 160)}
+
+• Biggest improvement:
+  ${shortenLabel(weakestEvidence, 160)}
+
+• Next step:
+  Use the tabs above to review strengths, gaps, keywords, section scores, and JD match.
         """.trimIndent()
 
         val strengths = """
-Evidenced role signals:
-${formatExamples((foundRoleKeywords + foundJdKeywords).distinct().take(8), "No clear role/JD signals detected yet.")}
+Strengths
 
-Strongest evidence:
+Role signals found
+
+${formatExamples((foundRoleKeywords + foundJdKeywords).distinct().take(8), "No clear role or JD signals detected yet.")}
+
+Strongest evidence
+
 ${formatExamples((impactSignals + toolSignals + extractActionVerbExamples(resumeText)).distinct().take(6), "No strong evidence lines detected yet.")}
 
-Tool and skill evidence:
+Tool and skill evidence
+
 ${formatExamples(toolSignals, "Tools or skills are not clearly tied to work evidence yet.")}
         """.trimIndent()
 
         val gaps = """
-Missing evidence:
+Gaps
+
+Missing skills impact
+
 ${formatExamples(missingRoleEvidence.take(6), "No major missing role evidence detected.")}
 
-Vague or generic claims:
+Recruiter concerns
+
 ${formatExamples((vaguePhrases + genericClaims).distinct().take(6), "No obvious vague claim detected.")}
 
-Weak bullets or missing outcomes:
+Weak bullets or missing outcomes
+
 ${formatExamples((responsibilityNoOutcome + findWeakBullets(resumeText)).distinct().take(6), "No obvious weak bullet detected from the extracted text.")}
 
-Missing measurable impact:
+Measurable impact
+
 ${if (impactSignals.isEmpty()) "• Add truthful metrics such as %, users, revenue, time saved, cost reduced, accuracy, CTR, ROAS, or efficiency." else "• Some measurable evidence exists; add impact to other major achievements where true."}
         """.trimIndent()
 
         val keywords = """
-Role Keywords Found:
+Keywords
+
+Role keywords found
+
 ${bulletList(foundRoleKeywords, "No matching role keywords detected yet.")}
 
-Role Keywords Missing:
-${missingRoleKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major missing role keyword detected." }}
+Role keywords to strengthen
 
-JD Keywords Found:
+${missingRoleKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major role keyword gap detected." }}
+
+JD keywords found
+
 ${bulletList(foundJdKeywords, "No matching JD keywords detected yet.")}
 
-JD Keywords Missing:
-${missingJdKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major missing JD keyword detected." }}
+JD keywords to strengthen
 
-Suggested placement:
+${missingJdKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major JD keyword gap detected." }}
+
+Suggested placement
+
 ${missingKeywords.take(8).joinToString("\n") { "• $it → ${suggestWhereToAddKeyword(it)}" }.ifBlank { "• No priority keyword placement needed from current inputs." }}
         """.trimIndent()
 
         val bespoke = if (jobSpecification.isBlank()) {
-            "Paste a job description next time for tailored JD matching. For now, improve the top $targetRole evidence in Experience, Projects, and Skills."
+            """
+JD Match
+
+• Status:
+  JD not attached.
+
+• Current analysis:
+  The score and recommendations are based on the selected target role.
+
+• For more tailored matching:
+  Paste a job description during the next analysis.
+            """.trimIndent()
         } else {
             """
-Top JD-specific gaps:
+JD Match
+
+JD-specific gaps
+
 ${formatExamples(missingJdKeywords.take(6).map { "$it → add in ${suggestWhereToAddKeyword(it)} if supported by real evidence." }, "No major JD-specific keyword gaps detected.")}
 
-Where to add them:
+Where to add them
+
 ${formatExamples(missingRoleEvidence.take(4).map { "$it Best location: $bestSectionToImprove." }, "Current resume already covers the clearest detected JD signals.")}
 
-Already evidenced:
+Already evidenced
+
 ${formatExamples(foundJdKeywords.take(8), "No clear JD keyword matches detected yet.")}
+            """.trimIndent()
+        }
+
+        val jdMatchSection = if (jobSpecification.isBlank()) {
+            """
+JD Match
+
+• Status: Not attached
+• This analysis is based on the selected target role.
+            """.trimIndent()
+        } else {
+            """
+JD Match
+
+• Keywords found:
+  ${foundJdKeywords.take(8).joinToString(", ").ifBlank { "No clear JD keyword matches detected." }}
+
+• Keywords not clearly evidenced:
+  ${missingJdKeywords.take(8).joinToString(", ").ifBlank { "No major JD keyword gaps detected." }}
             """.trimIndent()
         }
 
