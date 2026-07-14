@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.InterviewSprouts">
         <activity
+            android:name=".SavedReportDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".SavedReportsActivity"
             android:exported="false" />
         <activity
