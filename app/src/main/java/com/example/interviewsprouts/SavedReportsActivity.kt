@@ -1,7 +1,6 @@
 package com.example.interviewsprouts
 
 import android.content.Intent
-import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -63,60 +62,37 @@ class SavedReportsActivity : AppCompatActivity() {
     private fun createReportCard(report: JSONObject): View {
         val score = report.optInt("overall_score", 0)
         val rating = report.optString("rating_label").ifBlank { ratingForScore(score) }
-        val targetRole = report.optString("target_role", "Target role not saved")
-        val timestamp = report.optString("timestamp", "Date not saved")
-        val experience = report.optString("experience_level", "Experience not saved")
-        val jdStatus = report.optString("jd_status").ifBlank { "JD status not saved." }
         val preview = report.optString("basic_feedback", "Saved report preview unavailable.")
-            .lineSequence()
-            .map { it.trim().trimStart('•').trim() }
-            .firstOrNull { it.isNotBlank() && !it.equals("Overview", ignoreCase = true) }
-            ?: "Saved report preview unavailable."
-
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+            .lineSequence().map { it.trim().trimStart('•') }.firstOrNull { it.isNotBlank() } ?: "Saved report preview unavailable."
+        val card = TextView(this).apply {
+            text = buildString {
+                appendLine(report.optString("target_role", "Target role not saved"))
+                appendLine("Saved: ${report.optString("timestamp", "Date not saved")}")
+                appendLine("Experience: ${report.optString("experience_level", "Experience not saved")}")
+                appendLine("Score: $score/100 • $rating")
+                report.optString("jd_status").takeIf { it.isNotBlank() }?.let { appendLine(it) }
+                appendLine()
+                appendLine(preview)
+                append("Tap to view full report")
+            }
+            setTextColor(0xFF111111.toInt())
+            textSize = 15f
+            setLineSpacing(dp(3).toFloat(), 1f)
             setPadding(dp(16), dp(16), dp(16), dp(16))
             setBackgroundResource(R.drawable.bg_saved_report_card)
             isClickable = true
             isFocusable = true
             foreground = obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).let { a ->
-                val d = a.getDrawable(0)
-                a.recycle()
-                d
+                val d = a.getDrawable(0); a.recycle(); d
             }
             setOnClickListener {
-                startActivity(
-                    Intent(this@SavedReportsActivity, SavedReportDetailActivity::class.java)
-                        .putExtra("report_json", report.toString())
-                )
+                startActivity(Intent(this@SavedReportsActivity, SavedReportDetailActivity::class.java).putExtra("report_json", report.toString()))
             }
         }
-
-        card.addView(cardText(targetRole, 17f, 0xFF111111.toInt(), Typeface.BOLD))
-        card.addView(cardText("Saved: $timestamp", 14f, 0xFF555555.toInt()))
-        card.addView(cardText("Score: $score/100 • $rating", 15f, 0xFF0B63CE.toInt(), Typeface.BOLD))
-        card.addView(cardText("Experience: $experience", 14f, 0xFF333333.toInt()))
-        card.addView(cardText(jdStatus, 14f, 0xFF333333.toInt()))
-        card.addView(cardText(preview, 14f, 0xFF111111.toInt()).apply {
-            setPadding(0, dp(8), 0, 0)
-            maxLines = 3
-        })
-        card.addView(cardText("Tap to view full report", 14f, 0xFF0B63CE.toInt(), Typeface.BOLD).apply {
-            setPadding(0, dp(10), 0, 0)
-        })
-
         card.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = dp(12)
         }
         return card
-    }
-
-    private fun cardText(textValue: String, sizeSp: Float, color: Int, style: Int = Typeface.NORMAL): TextView = TextView(this).apply {
-        text = textValue
-        textSize = sizeSp
-        setTextColor(color)
-        setTypeface(typeface, style)
-        setLineSpacing(dp(2).toFloat(), 1f)
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
