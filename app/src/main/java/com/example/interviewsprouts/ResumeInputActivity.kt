@@ -26,17 +26,36 @@ class ResumeInputActivity : AppCompatActivity() {
 
     private val professionList = listOf(
         "Software Engineer",
+        "Android Developer",
+        "iOS Developer",
+        "Backend Developer",
+        "Frontend Developer",
+        "Full-Stack Developer",
+        "Machine Learning Engineer",
+        "AI Engineer",
+        "Data Engineer",
+        "Data Scientist",
         "Data Analyst",
+        "DevOps Engineer",
+        "Site Reliability Engineer (SRE)",
+        "QA Automation Engineer / SDET",
+        "Embedded Systems Engineer",
+        "Cybersecurity Analyst",
+        "Game Developer",
         "Business Analyst",
+        "Product Manager",
+        "Project Manager",
+        "UX/UI Designer",
+        "Finance Analyst",
+        "Operations Analyst",
+        "Sales Executive",
+        "Business Development Executive",
         "Marketing Executive",
         "Digital Marketing Specialist",
-        "Product Manager",
-        "Finance Analyst",
-        "Sales Executive",
-        "Operations Analyst",
         "HR Executive",
-        "UX/UI Designer",
-        "Project Manager"
+        "Recruiter / Talent Acquisition Specialist",
+        "Research Assistant / Researcher",
+        "Other / General"
     )
 
     private val experienceLevelList = listOf(
