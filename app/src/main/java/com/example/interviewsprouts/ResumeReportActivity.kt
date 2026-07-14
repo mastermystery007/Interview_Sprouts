@@ -28,7 +28,7 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private const val LOCKED_TAB_MESSAGE = "Watch an ad to unlock this section."
+private const val LOCKED_TAB_MESSAGE = "Watch an ad to unlock detailed analysis for this section."
 
 class ResumeReportActivity : AppCompatActivity() {
     private lateinit var tabOverview: TextView
@@ -41,6 +41,7 @@ class ResumeReportActivity : AppCompatActivity() {
     private var advancedLoadingRunnable: Runnable? = null
     private var advancedLoadingDotCount = 0
     private var isFirstAdUnlocked = false
+    private var isSecondAdUnlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,17 +61,24 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textScoreExperience).text = experienceLevel
         findViewById<TextView>(R.id.textScoreValue).text = scoreRatingLabel(report.overallScore)
         findViewById<TextView>(R.id.textAlignmentLabel).text = alignmentLabel(report.overallScore)
-        findViewById<TextView>(R.id.textJdChip).text = if (jdProvided) "JD Provided" else "No JD"
-        findViewById<TextView>(R.id.chipTargetRole).text = shortenLabel(targetRole, 24)
+        findViewById<TextView>(R.id.textJdChip).text = if (jdProvided) "JD: Attached" else "JD: Not attached"
+        findViewById<TextView>(R.id.chipTargetRole).text = targetRole
         findViewById<TextView>(R.id.chipExperienceLevel).text = experienceLevel
-        findViewById<TextView>(R.id.chipJdStatus).text = if (jdProvided) "JD Provided" else "No JD"
+        findViewById<TextView>(R.id.chipJdStatus).text = if (jdProvided) "JD: Attached" else "JD: Not attached"
         findViewById<ScoreCircleView>(R.id.scoreCircleView).setScore(report.overallScore)
 
         findViewById<TextView>(R.id.textBasicFeedback).text = applyReportFormatting(report.basicFeedback)
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
         findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
-        findViewById<TextView>(R.id.textAdvancedLockedMessage).text =
-            "Diamond Star Analysis with resume improvement suggestions and resume-specific interview questions is locked. Watch another ad to unlock.\n\nDiamond Star analysis sends your resume text and job description to our backend only after this second unlock."
+        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = """
+Unlock Diamond Star Analysis
+
+Watch another ad to unlock:
+• Optimized resume points
+• Missing JD-based points
+• Resume-specific interview questions
+• Optional resume point rewrites
+        """.trimIndent()
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
 
         tabOverview = findViewById(R.id.tabOverview)
@@ -105,24 +113,37 @@ class ResumeReportActivity : AppCompatActivity() {
         val textAdvancedLlmReview = findViewById<TextView>(R.id.textAdvancedLlmReview)
         val btnUnlockFullReport = findViewById<Button>(R.id.btnUnlockFullReport)
         val btnUnlockAdvancedLlmReview = findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
+        val headerUnlockDetailed = findViewById<TextView>(R.id.headerUnlockDetailed)
+        val headerDetailedAnalysis = findViewById<TextView>(R.id.headerDetailedAnalysis)
+        val headerUnlockAdvanced = findViewById<TextView>(R.id.headerUnlockAdvanced)
+        val headerAdvancedReview = findViewById<TextView>(R.id.headerAdvancedReview)
 
-        tabScrollContainer.visibility = View.VISIBLE
-        textTabContent.visibility = View.VISIBLE
-        setAllTabsVisible()
+        headerUnlockDetailed.visibility = View.VISIBLE
+        textLockedReportMessage.visibility = View.VISIBLE
+        btnUnlockFullReport.visibility = View.VISIBLE
+        tabScrollContainer.visibility = View.GONE
+        textTabContent.visibility = View.GONE
         textFullReport.visibility = View.GONE
+        headerDetailedAnalysis.visibility = View.GONE
+        headerUnlockAdvanced.visibility = View.GONE
+        headerAdvancedReview.visibility = View.GONE
         selectTab(tabOverview, report.overviewContent)
 
         btnUnlockFullReport.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Simulated Ad")
-                .setMessage("In the real app, a rewarded ad will play here. For now, tap Continue to unlock.")
-                .setPositiveButton("Continue") { _, _ ->
+                .setTitle("Unlock Gold Star Analysis")
+                .setMessage("Watch a short ad to unlock detailed section scores, strengths, improvements, keyword matching, and JD matching.")
+                .setPositiveButton("Watch Ad") { _, _ ->
                     isFirstAdUnlocked = true
+                    headerUnlockDetailed.visibility = View.GONE
                     tabScrollContainer.visibility = View.VISIBLE
                     textTabContent.visibility = View.VISIBLE
                     setAllTabsVisible()
                     selectTab(tabOverview, report.overviewContent)
                     textFullReport.visibility = View.VISIBLE
+                    headerDetailedAnalysis.visibility = View.VISIBLE
+                    headerUnlockAdvanced.visibility = View.VISIBLE
+                    headerAdvancedReview.visibility = View.GONE
                     textUnlockedPointSuggestions.visibility = View.GONE
                     textUnlockedInterviewQuestions.visibility = View.GONE
                     textLockedReportMessage.visibility = View.GONE
@@ -137,13 +158,16 @@ class ResumeReportActivity : AppCompatActivity() {
 
         btnUnlockAdvancedLlmReview.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Simulated Ad")
-                .setMessage("In the real app, another rewarded ad will unlock the Diamond Star Analysis. For now, tap Continue to unlock.")
-                .setPositiveButton("Continue") { _, _ ->
-                    textAdvancedLlmReview.visibility = View.VISIBLE
-                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
+                .setTitle("Unlock Diamond Star Analysis")
+                .setMessage("Watch another ad to unlock compressed AI resume suggestions and resume-specific interview questions.")
+                .setPositiveButton("Watch Ad") { _, _ ->
+                    isSecondAdUnlocked = true
+                    headerUnlockAdvanced.visibility = View.GONE
                     textAdvancedLockedMessage.visibility = View.GONE
                     btnUnlockAdvancedLlmReview.visibility = View.GONE
+                    textAdvancedLlmReview.visibility = View.VISIBLE
+                    headerAdvancedReview.visibility = View.VISIBLE
+                    startAdvancedLoadingAnimation(textAdvancedLlmReview)
                     requestAdvancedAiReview(resumeText, targetRole, experienceLevel, jobSpecification, textAdvancedLlmReview)
                 }
                 .setNegativeButton("Cancel", null)
@@ -162,7 +186,7 @@ class ResumeReportActivity : AppCompatActivity() {
         advancedLoadingRunnable = object : Runnable {
             override fun run() {
                 val dots = ".".repeat(advancedLoadingDotCount)
-                textView.text = "Generating Diamond Star Analysis$dots"
+                textView.text = "Generating Advanced AI Review$dots"
                 advancedLoadingDotCount = (advancedLoadingDotCount + 1) % 4
                 advancedLoadingHandler.postDelayed(this, 500L)
             }
@@ -247,7 +271,7 @@ class ResumeReportActivity : AppCompatActivity() {
         val questions = compactQuestions(response.interviewQuestions)
 
         if (advancedReview.isNotBlank()) {
-            sections.add("Diamond Star Analysis\n$advancedReview")
+            sections.add("Advanced AI Review\n$advancedReview")
         }
         if (suggestions.isNotBlank()) {
             sections.add("Resume Improvement Suggestions\n$suggestions")
@@ -262,7 +286,10 @@ class ResumeReportActivity : AppCompatActivity() {
     }
 
     private fun compactAdvancedReview(text: String?): String {
-        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Diamond Star Analysis", "Advanced Review", "AI Review")
+        val cleaned = stripDuplicateSectionHeading(text.orEmpty(), "Advanced AI Review",
+            "Diamond Star Analysis",
+            "Gold Star Overview",
+            "Section Scores", "Advanced Review", "AI Review")
         if (cleaned.isBlank() || isNullLiteral(cleaned)) return ""
 
         val items = extractBulletLikeItems(cleaned, splitSemicolons = true)
@@ -433,7 +460,10 @@ class ResumeReportActivity : AppCompatActivity() {
         ).containsMatchIn(line.trim())
 
     private fun looksLikeStandaloneHeading(line: String): Boolean = listOf(
-        "Diamond Star Analysis",
+        "Advanced AI Review",
+            "Diamond Star Analysis",
+            "Gold Star Overview",
+            "Section Scores",
         "Advanced Review",
         "AI Review",
         "Metric Evidence Detected",
@@ -458,8 +488,6 @@ class ResumeReportActivity : AppCompatActivity() {
         val builder = SpannableStringBuilder(text)
         val headings = listOf(
             "Overview:",
-            "Category signals:",
-            "Top fixes:",
             "Keyword Match:",
             "Measurable Details:",
             "Strong Action Verbs:",
@@ -472,23 +500,26 @@ class ResumeReportActivity : AppCompatActivity() {
             "Role Keywords Found:",
             "Role Keywords Missing:",
             "JD Keywords Found:",
-            "JD Keywords Missing:",
+            "JD Keywords Not Found:",
             "JD-specific missing points:",
             "JD keywords already evidenced:",
-            "Gold Star Analysis",
+            "Detailed Analysis",
+            "Advanced AI Review",
             "Diamond Star Analysis",
+            "Gold Star Overview",
+            "Section Scores",
             "Resume Improvement Suggestions",
             "Resume-Specific Interview Questions",
-            "Category Findings:",
-            "Candidate Positioning:",
+            "Role Fit:",
             "World-Class Scorecard:",
-            "JD Gap Severity:",
-            "Evidence Quality:",
+            "Missing skills impact",
+            "Resume Evidence",
+            "Recruiter concerns",
             "Recruiter Red Flags:",
             "Priority Fixes:",
             "High-priority JD signals:",
             "Best placement:",
-            "Gap severity:",
+            "Missing skills impact:",
             "Bullet quality issues:",
             "Main hiring concern:",
             "Archetype:"
@@ -503,10 +534,10 @@ class ResumeReportActivity : AppCompatActivity() {
         val gapColor = Color.rgb(190, 82, 32)
         val positiveSignals = listOf(
             "Found keywords:", "Role Keywords Found:", "JD Keywords Found:", "Strong evidence", "Excellent", "Good",
-            "Best proof:", "Strongest evidence:", "Clearly evidenced", "Proof signal"
+            "Strongest evidence:", "Clearly evidenced", "Proof signal"
         )
         val gapSignals = listOf(
-            "Missing keywords:", "Role Keywords Missing:", "JD Keywords Missing:", "Weak bullets:", "Missing measurable impact:", "Main gap", "Low", "Lacking", "Needs Improvement",
+            "Missing keywords:", "Role Keywords Missing:", "JD Keywords Not Found:", "Weak bullets:", "Missing measurable impact:", "Main gap", "Low", "Lacking", "Needs Improvement",
             "High:", "Main hiring concern:", "Interview risk:", "Recruiter Red Flags:", "Not clearly evidenced"
         )
         positiveSignals.forEach { signal ->
@@ -587,7 +618,7 @@ class ResumeReportActivity : AppCompatActivity() {
         }.trim()
 
         return """
-Diamond Star Analysis
+Advanced AI Review
 ${compactAdvancedReview(advanced)}
 
 Resume Improvement Suggestions
@@ -615,12 +646,7 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val foundKeywords = combinedKeywords.filter { resumeLower.contains(it.lowercase()) }
         val missingKeywords = combinedKeywords.filterNot { resumeLower.contains(it.lowercase()) }
 
-        val archetype = detectResumeArchetype(resumeText, targetRole, jobSpecification)
-        val jdPrioritySignals = extractJdPrioritySignals(jobSpecification)
-        val gapSeverity = rankGapSeverity(resumeText, targetRole, jobSpecification)
-        val recruiterRedFlags = detectRecruiterRedFlags(resumeText, targetRole, experienceLevel, jobSpecification)
         val atsParserRisks = detectAtsParserRisks(resumeText)
-        val bulletQualityIssues = diagnoseBulletQuality(resumeText)
         val impactSignals = extractImpactSignals(resumeText)
         val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
         val vaguePhrases = detectVaguePhrases(resumeText)
@@ -629,7 +655,6 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val missingRoleEvidence = detectMissingRoleEvidence(resumeText, targetRole, jobSpecification)
 
         val keywordMatchScore = calculateKeywordMatchScore(foundKeywords.size, combinedKeywords.size)
-        val evidenceConfidenceScore = calculateEvidenceConfidenceScore(resumeText, targetRole, jobSpecification)
         val measurableImpactScore = calculateMeasurableImpactScore(resumeText)
         val actionVerbScore = calculateStrongActionVerbScore(resumeText)
         val sectionClarityScore = calculateSectionClarityScore(resumeText)
@@ -654,140 +679,263 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
             evidenceSpecificityScore,
             toolProjectScore
         )
-
-        val impactSignals = extractImpactSignals(resumeText)
-        val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
-        val vaguePhrases = detectVaguePhrases(resumeText)
-        val genericClaims = detectGenericClaims(resumeText)
-        val responsibilityNoOutcome = detectResponsibilityWithoutOutcome(resumeText)
-        val missingRoleEvidence = detectMissingRoleEvidence(resumeText, targetRole, jobSpecification)
         val sectionOrderIssues = detectSectionOrderIssues(resumeText)
         val missingSections = detectMissingSections(resumeText)
         val strongestEvidence = (impactSignals + toolSignals + extractActionVerbExamples(resumeText)).firstOrNull() ?: "not clearly evidenced yet"
         val weakestEvidence = (genericClaims + responsibilityNoOutcome + vaguePhrases).firstOrNull() ?: "no major weak claim detected from extracted text"
         val bestSectionToImprove = suggestWhereToAddKeyword((missingJdKeywords + missingRoleKeywords).firstOrNull() ?: "role evidence")
+        val jdStatus = if (jobSpecification.isBlank()) "JD: Not attached" else "JD: Attached"
+        val jdStatusNote = if (jobSpecification.isBlank()) {
+            "No job description attached. This review is based on the selected target role."
+        } else {
+            "Job description attached. This review includes target-role and JD matching."
+        }
+        val biggestImprovement =
+            (missingRoleEvidence + genericClaims + responsibilityNoOutcome)
+                .firstOrNull()
+                ?: "Add clearer outcomes to the most role-relevant resume points."
+        val sectionScores = """
+Section Scores
 
-        val basicFeedback = """
-Overview:
-• Resume reviewed for $targetRole at $experienceLevel level.
-• Overall fit: ${alignmentLabel(overallScore)}.
-• Biggest issue: ${(missingRoleEvidence + genericClaims + responsibilityNoOutcome).firstOrNull() ?: "add more concrete outcomes to the strongest role-relevant bullets."}
+• Keyword Match: $keywordMatchScore/100
+  Measures how many relevant role and JD keywords appear in the resume.
 
-Category signals:
-• JD/Role Match: ${scoreRatingLabel(keywordMatchScore)}
-• Evidence Density: ${scoreRatingLabel(evidenceDensityScore)}
-• Measurable Impact: ${scoreRatingLabel(measurableImpactScore)}
-• Seniority Alignment: ${scoreRatingLabel(seniorityAlignmentScore)}
-• ATS Readability: ${scoreRatingLabel(atsReadabilityScore)}
+• Measurable Impact: $measurableImpactScore/100
+  Measures whether achievements show numbers, scale, or outcomes.
 
-Top fixes:
-1. Add missing role/JD evidence in $bestSectionToImprove without inventing skills.
-2. Attach tools, scope, and outcomes to the most important experience or project bullets.
-3. Replace vague claims with specific action, context, and result.
+• Action Verbs: $actionVerbScore/100
+  Measures whether resume points use clear action-oriented language.
+
+• Section Clarity: $sectionClarityScore/100
+  Measures whether standard resume sections are clearly identifiable.
+
+• Role Fit: $roleRelevanceScore/100
+  Measures how closely the resume supports the selected role.
         """.trimIndent()
 
-        val missingKeywordsHook = if (missingKeywords.isEmpty()) {
-            "Your resume covers the main keywords detected for this role/JD."
-        } else {
-            "Possible missing keywords: ${missingKeywords.take(3).joinToString(", ")}. Watch an ad to see the full keyword and gap analysis."
+        val basicFeedback = """
+Overview
+
+• Overall fit:
+  ${alignmentLabel(overallScore)}
+
+• Strongest evidence:
+  ${shortenLabel(strongestEvidence, 160)}
+
+• Biggest improvement:
+  ${shortenLabel(biggestImprovement, 160)}
+
+• JD status:
+  $jdStatusNote
+        """.trimIndent()
+
+        val missingKeywordsHook = when {
+            missingKeywords.isEmpty() && jobSpecification.isBlank() ->
+                "Your resume covers the main keywords detected for the selected role."
+
+            missingKeywords.isEmpty() ->
+                "Your resume covers the main keywords detected for the selected role and JD."
+
+            jobSpecification.isBlank() ->
+                """
+Keyword preview
+
+${missingKeywords.take(3).joinToString("\n") { "• $it" }}
+
+• Unlock Gold Star Analysis for the complete role-keyword review.
+                """.trimIndent()
+
+            else ->
+                """
+Keyword preview
+
+${missingKeywords.take(3).joinToString("\n") { "• $it" }}
+
+• Unlock Gold Star Analysis for the complete role and JD keyword review.
+                """.trimIndent()
         }
 
         val overview = """
-Your resume shows ${alignmentLabel(overallScore).lowercase()} for $targetRole. Strongest proof: ${shortenLabel(strongestEvidence, 140)}. Biggest issue: ${shortenLabel(weakestEvidence, 140)}. Improve fit by adding JD evidence, measurable outcomes, and clearer ownership where they are truthfully supported.
+Gold Star Overview
+
+• Overall fit:
+  ${alignmentLabel(overallScore)}
+
+• Strongest evidence:
+  ${shortenLabel(strongestEvidence, 160)}
+
+• Biggest improvement:
+  ${shortenLabel(weakestEvidence, 160)}
+
+• Next step:
+  Use the tabs above to review strengths, gaps, keywords, section scores, and JD match.
         """.trimIndent()
 
         val strengths = """
-Evidenced role signals:
-${formatExamples((foundRoleKeywords + foundJdKeywords).distinct().take(8), "No clear role/JD signals detected yet.")}
+Strengths
 
-Strongest evidence:
+Role signals found
+
+${formatExamples((foundRoleKeywords + foundJdKeywords).distinct().take(8), "No clear role or JD signals detected yet.")}
+
+Strongest evidence
+
 ${formatExamples((impactSignals + toolSignals + extractActionVerbExamples(resumeText)).distinct().take(6), "No strong evidence lines detected yet.")}
 
-Tool and skill evidence:
+Tool and skill evidence
+
 ${formatExamples(toolSignals, "Tools or skills are not clearly tied to work evidence yet.")}
         """.trimIndent()
 
         val gaps = """
-Missing evidence:
+Gaps
+
+Missing skills impact
+
 ${formatExamples(missingRoleEvidence.take(6), "No major missing role evidence detected.")}
 
-Vague or generic claims:
+Recruiter concerns
+
 ${formatExamples((vaguePhrases + genericClaims).distinct().take(6), "No obvious vague claim detected.")}
 
-Weak bullets or missing outcomes:
+Weak bullets or missing outcomes
+
 ${formatExamples((responsibilityNoOutcome + findWeakBullets(resumeText)).distinct().take(6), "No obvious weak bullet detected from the extracted text.")}
 
-Missing measurable impact:
+Measurable impact
+
 ${if (impactSignals.isEmpty()) "• Add truthful metrics such as %, users, revenue, time saved, cost reduced, accuracy, CTR, ROAS, or efficiency." else "• Some measurable evidence exists; add impact to other major achievements where true."}
         """.trimIndent()
 
         val keywords = """
-Role Keywords Found:
+Keywords
+
+Role keywords found
+
 ${bulletList(foundRoleKeywords, "No matching role keywords detected yet.")}
 
-Role Keywords Missing:
-${missingRoleKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major missing role keyword detected." }}
+Role keywords to strengthen
 
-JD Keywords Found:
+${missingRoleKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major role keyword gap detected." }}
+
+JD keywords found
+
 ${bulletList(foundJdKeywords, "No matching JD keywords detected yet.")}
 
-JD Keywords Missing:
-${missingJdKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major missing JD keyword detected." }}
+JD keywords to strengthen
 
-Suggested placement:
+${missingJdKeywords.take(12).joinToString("\n") { "• $it → ${keywordAddSuggestion(it)}" }.ifBlank { "• No major JD keyword gap detected." }}
+
+Suggested placement
+
 ${missingKeywords.take(8).joinToString("\n") { "• $it → ${suggestWhereToAddKeyword(it)}" }.ifBlank { "• No priority keyword placement needed from current inputs." }}
         """.trimIndent()
 
         val bespoke = if (jobSpecification.isBlank()) {
-            "Paste a job description next time for tailored JD matching. For now, improve the top $targetRole evidence in Experience, Projects, and Skills."
+            """
+JD Match
+
+• Status:
+  JD not attached.
+
+• Current analysis:
+  The score and recommendations are based on the selected target role.
+
+• For more tailored matching:
+  Paste a job description during the next analysis.
+            """.trimIndent()
         } else {
             """
-Top JD-specific gaps:
+JD Match
+
+JD-specific gaps
+
 ${formatExamples(missingJdKeywords.take(6).map { "$it → add in ${suggestWhereToAddKeyword(it)} if supported by real evidence." }, "No major JD-specific keyword gaps detected.")}
 
-Where to add them:
+Where to add them
+
 ${formatExamples(missingRoleEvidence.take(4).map { "$it Best location: $bestSectionToImprove." }, "Current resume already covers the clearest detected JD signals.")}
 
-Already evidenced:
+Already evidenced
+
 ${formatExamples(foundJdKeywords.take(8), "No clear JD keyword matches detected yet.")}
             """.trimIndent()
         }
 
+        val jdMatchSection = if (jobSpecification.isBlank()) {
+            """
+JD Match
+
+• Status: Not attached
+• This analysis is based on the selected target role.
+            """.trimIndent()
+        } else {
+            """
+JD Match
+
+• Keywords found:
+  ${foundJdKeywords.take(8).joinToString(", ").ifBlank { "No clear JD keyword matches detected." }}
+
+• Keywords not clearly evidenced:
+  ${missingJdKeywords.take(8).joinToString(", ").ifBlank { "No major JD keyword gaps detected." }}
+            """.trimIndent()
+        }
+
         val fullReport = """
-Gold Star Analysis
+Detailed Analysis
 
-Category Findings:
-• JD/Role Match: ${scoreRatingLabel(keywordMatchScore)} — Resume covers ${foundKeywords.size} of ${combinedKeywords.size} high-priority role/JD signals.
-• Evidence Density: ${scoreRatingLabel(evidenceDensityScore)} — ${if (evidenceDensityScore >= 70) "Claims often include context, tools, or outcomes." else "Several claims need tools, context, or outcomes."}
-• Measurable Impact: ${scoreRatingLabel(measurableImpactScore)} — ${if (impactSignals.isEmpty()) "Measurable outcomes are not clearly evidenced." else "Some quantified evidence exists, but major bullets may still need numbers."}
-• Seniority Alignment: ${scoreRatingLabel(seniorityAlignmentScore)} — ${seniorityAlignmentNote(resumeText, experienceLevel)}
+$sectionScores
 
-Evidence Quality:
-• Strongest evidence: ${shortenLabel(strongestEvidence, 145)}
-• Weakest evidence: ${shortenLabel(weakestEvidence, 145)}
-• Vague claim detected: ${vaguePhrases.firstOrNull() ?: "not clearly evidenced"}
-• Missing outcome pattern: ${responsibilityNoOutcome.firstOrNull() ?: "not clearly evidenced"}
+Role Fit
 
-JD/Role Fit:
-• Clearly evidenced: ${(foundRoleKeywords + foundJdKeywords).distinct().take(6).joinToString(", ").ifBlank { "not clearly evidenced" }}
-• Not clearly evidenced: ${(missingRoleKeywords + missingJdKeywords).distinct().take(6).joinToString(", ").ifBlank { "no major gap detected" }}
-• Best section to improve: $bestSectionToImprove
+• Role fit:
+  ${alignmentLabel(roleRelevanceScore)}
 
-ATS/Structure:
-• Section clarity: ${scoreRatingLabel(sectionClarityScore)} — ${detectSectionSignals(resumeText).joinToString(", ").ifBlank { "standard sections not clearly detected" }}
-• Keyword placement: Add missing truthful keywords in Skills for tools and Experience/Projects for proof.
-• Readability issue: ${(sectionOrderIssues + detectMissingSections(resumeText)).firstOrNull() ?: "no major ATS structure issue detected"}
+• Experience level match:
+  ${scoreRatingLabel(seniorityAlignmentScore)}
 
-Priority Fixes:
-1. Strengthen ${missingKeywords.firstOrNull() ?: "the top role requirement"} with a truthful Experience or Project example.
-2. Add measurable outcome evidence to the most important bullet where supportable.
-3. Replace vague claims with action, tool, scope, and result.
+• Explanation:
+  ${seniorityAlignmentNote(resumeText, experienceLevel)}
+
+Resume Evidence
+
+• Strongest evidence:
+  ${shortenLabel(strongestEvidence, 160)}
+
+• Main evidence weakness:
+  ${shortenLabel(weakestEvidence, 160)}
+
+• Measurable impact:
+  ${if (impactSignals.isEmpty()) "Clear measurable outcomes were not detected." else "Some measurable outcomes are present."}
+
+$jdMatchSection
+
+Resume Structure
+
+• Section clarity:
+  $sectionClarityScore/100
+
+• Main structure concern:
+  ${(atsParserRisks + sectionOrderIssues + missingSections)
+      .firstOrNull()
+      ?: "No major resume structure concern detected."}
+
+Priority Fixes
+
+• Strengthen:
+  ${missingKeywords.firstOrNull() ?: "The most important role requirement"}
+
+• Add:
+  A truthful measurable outcome to the most important experience or project point.
+
+• Rewrite:
+  Replace vague lines with a specific task, tool used, and real outcome.
         """.trimIndent()
 
         return ResumeReportResult(
             overallScore, keywordMatchScore, measurableImpactScore, actionVerbScore, sectionClarityScore,
-            evidenceConfidenceScore, foundKeywords, missingKeywords, basicFeedback, missingKeywordsHook, fullReport,
-            overview, strengths, gaps, keywords, bespoke
+            roleRelevanceScore, foundKeywords, missingKeywords, basicFeedback, missingKeywordsHook, fullReport,
+            overview, strengths, gaps, keywords, bespoke, jdStatus
         )
     }
 
@@ -1194,17 +1342,36 @@ ${formatExamples(missing, "No major missing section detected.")}
     private fun getKeywordsForRole(targetRole: String): List<String> {
         val roleLower = targetRole.lowercase()
         return when {
-            roleLower.contains("software") || roleLower.contains("android") -> listOf("Kotlin", "Java", "Android", "REST API", "Git", "testing", "debugging", "UI", "XML", "database", "Agile", "architecture")
+            roleLower.contains("software engineer") -> listOf(
+                "Java", "Kotlin", "Python", "JavaScript", "TypeScript", "C++", "Data Structures", "Algorithms",
+                "Object-Oriented Programming", "System Design", "REST API", "SQL", "Git", "Unit Testing",
+                "Integration Testing", "Debugging", "CI/CD", "Docker", "Cloud Computing", "Agile",
+                "Performance Optimization", "Security", "Documentation"
+            )
+            roleLower.contains("android") -> listOf("Kotlin", "Java", "Android", "Jetpack", "XML", "REST API", "Git", "Unit Testing", "Debugging", "Material Design", "SQLite", "Room", "Gradle", "Play Store")
+            roleLower.contains("ios") -> listOf("Swift", "SwiftUI", "UIKit", "iOS", "Xcode", "REST API", "Git", "Unit Testing", "Debugging", "Core Data", "App Store", "MVC", "MVVM")
+            roleLower.contains("backend") -> listOf("Java", "Python", "Node.js", "REST API", "SQL", "NoSQL", "Docker", "Cloud Computing", "Authentication", "Microservices", "System Design", "Git", "CI/CD", "Unit Testing")
+            roleLower.contains("frontend") -> listOf("JavaScript", "TypeScript", "React", "HTML", "CSS", "REST API", "UI", "Responsive Design", "Accessibility", "Git", "Testing", "Performance Optimization")
+            roleLower.contains("full-stack") || roleLower.contains("full stack") -> listOf("JavaScript", "TypeScript", "React", "Node.js", "REST API", "SQL", "Git", "Docker", "Cloud Computing", "Testing", "Frontend", "Backend", "System Design")
+            roleLower.contains("machine learning") || roleLower.contains("ai engineer") -> listOf("Python", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "NLP", "Model Evaluation", "Data Preprocessing", "MLOps", "SQL", "Statistics", "Cloud Computing")
+            roleLower.contains("data engineer") -> listOf("SQL", "Python", "ETL", "Data Pipelines", "Spark", "Airflow", "Data Warehousing", "Cloud Computing", "Docker", "Data Modeling", "Big Data", "Git")
+            roleLower.contains("data scientist") -> listOf("Python", "SQL", "Statistics", "Machine Learning", "Data Visualization", "Pandas", "NumPy", "Model Evaluation", "Experimentation", "Dashboard", "Business Insights")
             roleLower.contains("data analyst") -> listOf("SQL", "Excel", "Python", "Power BI", "Tableau", "data cleaning", "data visualization", "dashboard", "KPI", "statistics", "reporting", "business insights", "data modeling", "ETL", "trend analysis")
+            roleLower.contains("devops") || roleLower.contains("site reliability") || roleLower.contains("sre") -> listOf("CI/CD", "Docker", "Kubernetes", "Linux", "Cloud Computing", "AWS", "Azure", "GCP", "Monitoring", "Incident Response", "Terraform", "Scripting", "Automation")
+            roleLower.contains("qa automation") || roleLower.contains("sdet") -> listOf("Test Automation", "Selenium", "Appium", "Unit Testing", "Integration Testing", "API Testing", "Regression Testing", "Java", "Python", "CI/CD", "Bug Tracking", "Test Cases")
+            roleLower.contains("embedded") -> listOf("C", "C++", "Embedded C", "Microcontrollers", "RTOS", "Firmware", "Debugging", "Hardware Interfaces", "UART", "SPI", "I2C", "Testing")
+            roleLower.contains("cybersecurity") -> listOf("Security", "Network Security", "SIEM", "Incident Response", "Vulnerability Assessment", "Risk Analysis", "SOC", "Threat Detection", "Linux", "Python", "Compliance")
+            roleLower.contains("game") -> listOf("Unity", "Unreal Engine", "C#", "C++", "Game Design", "Gameplay Programming", "Physics", "Optimization", "Debugging", "Git", "3D Math")
             roleLower.contains("business analyst") -> listOf("requirements gathering", "stakeholder management", "business process analysis", "user stories", "UAT", "Jira", "Agile", "SQL", "Excel", "Power BI", "Tableau", "KPI", "gap analysis", "process improvement", "BRD", "FRD")
             roleLower.contains("marketing") -> listOf("SEO", "SEM", "Google Analytics", "Google Ads", "Meta Ads", "campaign management", "conversion rate", "CTR", "CPC", "CPA", "ROAS", "lead generation", "A/B testing", "email marketing", "landing page optimization")
             roleLower.contains("product manager") -> listOf("product roadmap", "user research", "market research", "stakeholder management", "PRD", "user stories", "analytics", "A/B testing", "KPI", "go-to-market", "prioritization", "customer feedback", "feature planning", "product strategy")
             roleLower.contains("finance") -> listOf("financial analysis", "Excel", "financial modeling", "forecasting", "budgeting", "variance analysis", "valuation", "reporting", "Power BI", "risk analysis", "P&L", "cash flow", "cost analysis", "scenario analysis")
-            roleLower.contains("sales") -> listOf("lead generation", "CRM", "sales pipeline", "cold calling", "client relationship management", "negotiation", "sales targets", "revenue growth", "B2B sales", "B2C sales", "customer acquisition", "account management", "conversion rate")
+            roleLower.contains("sales") || roleLower.contains("business development") -> listOf("lead generation", "CRM", "sales pipeline", "cold calling", "client relationship management", "negotiation", "sales targets", "revenue growth", "B2B sales", "B2C sales", "customer acquisition", "account management", "conversion rate", "partnerships")
             roleLower.contains("operations") -> listOf("process improvement", "operations management", "workflow optimization", "Excel", "Power BI", "KPI", "cost reduction", "supply chain", "inventory management", "vendor management", "reporting", "root cause analysis", "SOP", "quality control")
-            roleLower.contains("hr") -> listOf("recruitment", "talent acquisition", "onboarding", "employee engagement", "HR operations", "payroll", "performance management", "HRIS", "sourcing", "screening", "interview coordination", "employee relations", "training")
+            roleLower.contains("hr") || roleLower.contains("recruiter") || roleLower.contains("talent acquisition") -> listOf("recruitment", "talent acquisition", "onboarding", "employee engagement", "HR operations", "payroll", "performance management", "HRIS", "sourcing", "screening", "interview coordination", "employee relations", "training")
             roleLower.contains("ux") || roleLower.contains("ui") -> listOf("user research", "wireframing", "prototyping", "Figma", "usability testing", "design systems", "user flows", "interaction design", "visual design", "accessibility", "information architecture", "customer journey", "A/B testing")
             roleLower.contains("project manager") -> listOf("project planning", "stakeholder management", "risk management", "Agile", "Scrum", "Jira", "timeline management", "budget management", "resource allocation", "cross-functional collaboration", "status reporting", "delivery management", "scope management")
+            roleLower.contains("research assistant") || roleLower.contains("researcher") -> listOf("research", "literature review", "data collection", "data analysis", "Excel", "statistics", "report writing", "experiment design", "documentation", "presentation", "survey", "qualitative research")
             else -> listOf("communication", "analysis", "problem solving", "project management", "stakeholder management", "reporting", "Excel", "presentation", "collaboration", "process improvement")
         }
     }
@@ -1270,14 +1437,25 @@ ${formatExamples(missing, "No major missing section detected.")}
 
     private fun saveReportLocally(targetRole: String, experienceLevel: String, report: ResumeReportResult) {
         val prefs = getSharedPreferences(SavedReportsActivity.PREFS_NAME, MODE_PRIVATE)
-        val existing = JSONArray(prefs.getString(SavedReportsActivity.KEY_REPORTS, "[]") ?: "[]")
+        val existing = try {
+            JSONArray(prefs.getString(SavedReportsActivity.KEY_REPORTS, "[]") ?: "[]")
+        } catch (_: Exception) {
+            JSONArray()
+        }
         val item = JSONObject().apply {
             put("timestamp", SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date()))
             put("target_role", targetRole)
             put("experience_level", experienceLevel)
             put("overall_score", report.overallScore)
+            put("rating_label", scoreRatingLabel(report.overallScore))
+            put("jd_status", report.jdStatus)
             put("basic_feedback", report.basicFeedback)
             put("full_report", report.fullReport)
+            put("keyword_match_score", report.keywordMatchScore)
+            put("measurable_impact_score", report.measurableImpactScore)
+            put("action_verb_score", report.actionVerbScore)
+            put("section_clarity_score", report.sectionClarityScore)
+            put("role_fit_score", report.roleRelevanceScore)
             put("local_only_note", "Saved reports are stored locally on this device only.")
         }
         existing.put(item)
@@ -1324,5 +1502,6 @@ data class ResumeReportResult(
     val strengthsContent: String,
     val gapsContent: String,
     val keywordsContent: String,
-    val bespokeContent: String
+    val bespokeContent: String,
+    val jdStatus: String
 )
