@@ -613,7 +613,6 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val gapSeverity = rankGapSeverity(resumeText, targetRole, jobSpecification)
         val recruiterRedFlags = detectRecruiterRedFlags(resumeText, targetRole, experienceLevel, jobSpecification)
         val atsParserRisks = detectAtsParserRisks(resumeText)
-        val bulletQualityIssues = diagnoseBulletQuality(resumeText)
         val impactSignals = extractImpactSignals(resumeText)
         val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
         val vaguePhrases = detectVaguePhrases(resumeText)
