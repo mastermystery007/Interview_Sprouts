@@ -186,6 +186,11 @@ class ResumeInputActivity : AppCompatActivity() {
                 return normalizeExtractedResumeText(raw)
             }
         }
+
+        return rebuilt.joinToString("\n")
+            .replace(Regex("[ \\t]+"), " ")
+            .replace(Regex("\\n{3,}"), "\n\n")
+            .trim()
     }
 
 

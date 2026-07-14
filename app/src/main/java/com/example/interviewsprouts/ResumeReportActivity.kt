@@ -96,8 +96,30 @@ class ResumeReportActivity : AppCompatActivity() {
 
         val tabScrollContainer = findViewById<View>(R.id.tabScrollContainer)
         val textFullReport = findViewById<TextView>(R.id.textFullReport)
-        val textUnlockedPointSuggestions = findViewById<TextView>(R.id.textUnlockedPointSuggestions)
-        val textUnlockedInterviewQuestions = findViewById<TextView>(R.id.textUnlockedInterviewQuestions)
+        val textUnlockedPointSuggestions =
+            findViewById<TextView>(R.id.textUnlockedPointSuggestions)
+        val textUnlockedInterviewQuestions =
+            findViewById<TextView>(R.id.textUnlockedInterviewQuestions)
+        val textLockedReportMessage =
+            findViewById<TextView>(R.id.textLockedReportMessage)
+        val textAdvancedLockedMessage =
+            findViewById<TextView>(R.id.textAdvancedLockedMessage)
+        val textAdvancedLlmReview =
+            findViewById<TextView>(R.id.textAdvancedLlmReview)
+        val btnUnlockFullReport =
+            findViewById<Button>(R.id.btnUnlockFullReport)
+        val btnUnlockAdvancedLlmReview =
+            findViewById<Button>(R.id.btnUnlockAdvancedLlmReview)
+
+        val headerUnlockDetailed =
+            findViewById<TextView>(R.id.headerUnlockDetailed)
+        val headerDetailedAnalysis =
+            findViewById<TextView>(R.id.headerDetailedAnalysis)
+        val headerUnlockAdvanced =
+            findViewById<TextView>(R.id.headerUnlockAdvanced)
+        val headerAdvancedReview =
+            findViewById<TextView>(R.id.headerAdvancedReview)
+
         textUnlockedPointSuggestions.visibility = View.GONE
         textUnlockedInterviewQuestions.visibility = View.GONE
         val textLockedReportMessage = findViewById<TextView>(R.id.textLockedReportMessage)
@@ -163,6 +185,7 @@ class ResumeReportActivity : AppCompatActivity() {
     private fun startAdvancedLoadingAnimation(textView: TextView) {
         stopAdvancedLoadingAnimation()
         advancedLoadingDotCount = 0
+
         advancedLoadingRunnable = object : Runnable {
             override fun run() {
                 val dots = ".".repeat(advancedLoadingDotCount)
@@ -171,6 +194,7 @@ class ResumeReportActivity : AppCompatActivity() {
                 advancedLoadingHandler.postDelayed(this, 500L)
             }
         }
+
         advancedLoadingRunnable?.run()
     }
 
@@ -238,8 +262,12 @@ class ResumeReportActivity : AppCompatActivity() {
         })
     }
 
-    private fun formatBackendAdvancedReview(response: ResumeAiResponse, offlineFallback: String): String {
+    private fun formatBackendAdvancedReview(
+        response: ResumeAiResponse,
+        offlineFallback: String
+    ): String {
         val sections = mutableListOf<String>()
+
         val advancedReview = compactAdvancedReview(response.advancedReview)
         val suggestions = compactSuggestions(response.tailoredResumeSuggestions)
         val questions = compactQuestions(response.interviewQuestions)
@@ -247,15 +275,18 @@ class ResumeReportActivity : AppCompatActivity() {
         if (advancedReview.isNotBlank()) {
             sections.add("Advanced AI Review\n$advancedReview")
         }
+
         if (suggestions.isNotBlank()) {
             sections.add("Resume Improvement Suggestions\n$suggestions")
         }
+
         if (questions.isNotBlank()) {
             sections.add("Resume-Specific Interview Questions\n$questions")
         }
 
         return sections.joinToString("\n\n").ifBlank {
-            "AI backend returned no usable content. Showing offline fallback.\n\n${offlineFallback.substringAfter("\n\n", offlineFallback)}"
+            "AI backend returned no usable content. Showing offline fallback.\n\n" +
+                offlineFallback.substringAfter("\n\n", offlineFallback)
         }
     }
 
@@ -1356,7 +1387,21 @@ Page 5 — Priority Fixes:
         val trimmed = line.trim()
         if (trimmed.isBlank()) return false
         val lower = trimmed.lowercase()
-        val fragmentStarters = listOf("and ", "or ", "with ", "for ", "to ", "in ", "on ", "of ")
+        val fragmentStarters = listOf(
+            "and ",
+            "or ",
+            "with ",
+            "for ",
+            "to ",
+            "in ",
+            "on ",
+            "of ",
+            "using ",
+            "through ",
+            "while ",
+            "which ",
+            "that "
+        )
         return fragmentStarters.any { lower.startsWith(it) } || trimmed.first().isLowerCase()
     }
 
