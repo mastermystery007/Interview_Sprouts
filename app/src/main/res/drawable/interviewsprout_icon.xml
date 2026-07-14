@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Rounded resume/document card -->
+    <path
+        android:fillColor="#0B63CE"
+        android:pathData="M26,14h45l15,15v58c0,5.5 -4.5,10 -10,10H26c-5.5,0 -10,-4.5 -10,-10V24c0,-5.5 4.5,-10 10,-10z" />
+    <path
+        android:fillColor="#D8ECFF"
+        android:pathData="M71,14v14c0,3.3 2.7,6 6,6h9z" />
+
+    <!-- Resume text lines -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M31,40h31 M31,53h39 M31,66h23" />
+
+    <!-- Growth stem -->
+    <path
+        android:strokeColor="#1F9D55"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M58,86 C58,75 61,67 69,60" />
+
+    <!-- Leaves -->
+    <path
+        android:fillColor="#2FBF71"
+        android:pathData="M58,75 C47,70 44,60 47,52 C58,53 64,61 58,75z" />
+    <path
+        android:fillColor="#44D17A"
+        android:pathData="M67,63 C70,51 80,47 88,50 C86,62 78,68 67,63z" />
+
+    <!-- Small success star/check accent -->
+    <path
+        android:fillColor="#FFC43D"
+        android:pathData="M78,72 l3,7 l7,1 l-5,5 l1,7 l-6,-3.5 l-6,3.5 l1,-7 l-5,-5 l7,-1z" />
+</vector>

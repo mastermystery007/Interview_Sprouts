@@ -26,17 +26,36 @@ class ResumeInputActivity : AppCompatActivity() {
 
     private val professionList = listOf(
         "Software Engineer",
+        "Android Engineer",
+        "iOS Developer",
+        "Backend Software Engineer",
+        "Frontend Software Engineer",
+        "Full-Stack Developer",
+        "Machine Learning Engineer",
+        "AI Engineer",
+        "Data Engineer",
+        "Data Scientist",
         "Data Analyst",
+        "DevOps Engineer",
+        "Site Reliability Engineer (SRE)",
+        "QA Automation Engineer / SDET",
+        "Embedded Software Engineer",
+        "Security Engineer",
+        "Game Developer",
         "Business Analyst",
+        "Product Manager",
+        "Project Manager",
+        "UX/UI Designer",
+        "Finance Analyst",
+        "Operations Analyst",
+        "Sales Executive",
+        "Business Development Executive",
         "Marketing Executive",
         "Digital Marketing Specialist",
-        "Product Manager",
-        "Finance Analyst",
-        "Sales Executive",
-        "Operations Analyst",
         "HR Executive",
-        "UX/UI Designer",
-        "Project Manager"
+        "Recruiter / Talent Acquisition Specialist",
+        "Research Assistant / Researcher",
+        "General Job Applicant"
     )
 
     private val experienceLevelList = listOf(
@@ -163,10 +182,77 @@ class ResumeInputActivity : AppCompatActivity() {
 
             PDDocument.load(inputStream).use { document ->
                 val stripper = PDFTextStripper()
-                return stripper.getText(document).trim()
+                val raw = stripper.getText(document)
+                return normalizeExtractedResumeText(raw)
             }
         }
     }
+
+
+    private fun normalizeExtractedResumeText(rawText: String): String {
+        val normalized = rawText
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace(Regex("(?m)^\\s*[●▪◦‣–-]\\s+"), "• ")
+            .replace(Regex("(?m)([A-Za-z]{2,})-\\n([A-Za-z]{2,})"), "$1$2")
+
+        val sourceLines = normalized.lines()
+            .map { it.replace(Regex("\\s+"), " ").trim() }
+            .filterNot { it.matches(Regex("^\\d+$")) }
+
+        val rebuilt = mutableListOf<String>()
+        for (rawLine in sourceLines) {
+            val line = rawLine.trim()
+            if (line.isBlank()) {
+                if (rebuilt.lastOrNull()?.isNotBlank() == true) rebuilt.add("")
+                continue
+            }
+
+            if (rebuilt.isEmpty() || rebuilt.last().isBlank()) {
+                rebuilt.add(line)
+                continue
+            }
+
+            val previous = rebuilt.last()
+            val shouldMerge = !previous.endsWithSentencePunctuation() &&
+                !isLikelyResumeHeading(line) &&
+                !isBulletLine(line) &&
+                !isLikelyDateLine(line)
+
+            if (shouldMerge) {
+                rebuilt[rebuilt.lastIndex] = "$previous $line".replace(Regex("\\s+"), " ").trim()
+            } else {
+                rebuilt.add(line)
+            }
+        }
+
+        return rebuilt.joinToString("\n")
+            .replace(Regex("[ \\t]+"), " ")
+            .replace(Regex("\\n{3,}"), "\n\n")
+            .trim()
+    }
+
+    private fun String.endsWithSentencePunctuation(): Boolean = trim().endsWith('.') || trim().endsWith('!') || trim().endsWith('?') || trim().endsWith(':')
+
+    private fun isLikelyResumeHeading(line: String): Boolean {
+        val cleaned = line.trim().trimEnd(':')
+        val commonHeadings = setOf(
+            "Experience", "Work Experience", "Professional Experience", "Education", "Skills", "Technical Skills",
+            "Projects", "Certifications", "Summary", "Profile", "Objective", "Employment", "Awards"
+        )
+        if (commonHeadings.any { it.equals(cleaned, ignoreCase = true) }) return true
+        return cleaned.length <= 32 && cleaned.any { it.isLetter() } && cleaned.uppercase() == cleaned
+    }
+
+    private fun isBulletLine(line: String): Boolean = line.trimStart().startsWith("•")
+
+    private fun isLikelyDateLine(line: String): Boolean {
+        val month = "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|January|February|March|April|June|July|August|September|October|November|December)"
+        val year = "(?:19|20)\\d{2}"
+        return Regex("(?i)^\\s*(?:$month\\s+)?$year\\s*[-–—]\\s*(?:(?:$month\\s+)?$year|present)\\s*$").containsMatchIn(line) ||
+            Regex("^\\s*\\d{1,2}/\\d{4}\\s*[-–—]\\s*(?:\\d{1,2}/\\d{4}|present)\\s*$", RegexOption.IGNORE_CASE).containsMatchIn(line)
+    }
+
 
     private fun getFileName(uri: Uri): String? {
         var fileName: String? = null
