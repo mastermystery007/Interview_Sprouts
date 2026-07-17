@@ -37,19 +37,19 @@ jobs:
 
       - name: Apply source changes
         id: apply_fixes
-        continue-on-error: true
         run: |
+          set +e
           python .github/apply_remaining_fixes.py > /tmp/fix-output.log 2>&1
           status=$?
+          set -e
           cat /tmp/fix-output.log
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
 
-      - name: Upload modified source files
-        if: steps.apply_fixes.outputs.status == '0'
+      - name: Upload source and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: final-fixed-sources
+          name: final-fixes-diagnostics
           if-no-files-found: error
           path: |
             app/src/main/java/com/example/interviewsprouts/ResumeReportActivity.kt
@@ -57,13 +57,7 @@ jobs:
             app/src/main/res/layout/activity_resume_report.xml
             app/src/main/res/layout/activity_resume_input.xml
             .idea/planningMode.xml
-
-      - name: Upload script failure log
-        if: steps.apply_fixes.outputs.status != '0'
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-fixes-error
-          path: /tmp/fix-output.log
+            /tmp/fix-output.log
 
       - name: Build debug APK
         if: steps.apply_fixes.outputs.status == '0'
