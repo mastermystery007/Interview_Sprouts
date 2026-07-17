@@ -1,7 +1,7 @@
 name: Apply Resume Refine branding
 
 on:
-  push:
+  pull_request:
     branches:
       - main
     paths:
@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out main
+      - name: Check out pull request branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: main
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -43,7 +43,7 @@ jobs:
       - name: Run Android lint
         run: ./gradlew lint
 
-      - name: Commit verified application changes
+      - name: Commit verified application changes to pull request branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -53,4 +53,4 @@ jobs:
             exit 0
           fi
           git commit -m "Rename app to Resume Refine and clarify AI processing"
-          git push origin HEAD:main
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
