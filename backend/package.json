@@ -1,7 +1,7 @@
 {
-  "name": "interview-sprouts-backend",
+  "name": "resume-refine-backend",
   "version": "1.0.0",
-  "description": "Backend proxy for InterviewSprouts resume AI analysis.",
+  "description": "Backend proxy for Resume Refine AI resume analysis.",
   "main": "server.js",
   "type": "module",
   "scripts": {

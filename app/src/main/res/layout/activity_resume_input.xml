@@ -209,7 +209,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="Privacy: Diamond Star analysis sends resume text and JD to our backend only after the second unlock."
+                android:text="AI processing notice: Basic and Gold analysis run on your device. If you unlock Diamond Star Analysis, your resume text and optional job description are sent through our server to DeepSeek, an external large language model, for AI analysis. Do not include sensitive information you do not want processed. Saved reports remain on this device."
                 android:textColor="#64748B"
                 android:textSize="12sp" />
 

@@ -1,6 +1,6 @@
-# InterviewSprouts Backend
+# Resume Refine Backend
 
-Node.js + Express backend proxy for InterviewSprouts advanced resume analysis. The Android app should call this backend only; DeepSeek API keys stay server-side.
+Node.js + Express backend proxy for Resume Refine advanced resume analysis. The Android app should call this backend only; DeepSeek API keys stay server-side.
 
 ## Local setup
 

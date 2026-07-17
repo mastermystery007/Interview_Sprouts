@@ -121,4 +121,4 @@ print("Changed files:")
 for item in sorted(changed):
     print(item)
 
-# Trigger the registered one-time verification workflow.
+# Retrigger verification after fixing Android theme resource identifiers.

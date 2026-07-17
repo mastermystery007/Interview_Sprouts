@@ -30,7 +30,7 @@ object ReportShareUtils {
         val safeName = fileName
             .replace(Regex("""[^A-Za-z0-9._-]+"""), "_")
             .trim('_')
-            .ifBlank { "InterviewSprout_Report" }
+            .ifBlank { "Resume_Refine_Report" }
         val file = File(directory, "$safeName.pdf")
         val document = PdfDocument()
         val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
