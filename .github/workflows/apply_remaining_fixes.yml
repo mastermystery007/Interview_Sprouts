@@ -35,9 +35,33 @@ jobs:
           cache: gradle
 
       - name: Apply source changes
-        run: python .github/apply_remaining_fixes.py
+        id: apply_fixes
+        continue-on-error: true
+        run: |
+          python .github/apply_remaining_fixes.py > /tmp/fix-output.log 2>&1
+          status=$?
+          cat /tmp/fix-output.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Commit failure details
+        if: steps.apply_fixes.outputs.status != '0'
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          git restore --worktree --staged .
+          git clean -fd
+          mkdir -p .github
+          cp /tmp/fix-output.log .github/fix-output.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/fix-output.log
+          git commit -m "Capture remaining fixes script failure"
+          git push origin HEAD:"$TARGET_BRANCH"
+          exit 1
 
       - name: Commit changes
+        if: steps.apply_fixes.outputs.status == '0'
         env:
           TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
@@ -48,12 +72,15 @@ jobs:
           git push origin HEAD:"$TARGET_BRANCH"
 
       - name: Build debug APK
+        if: steps.apply_fixes.outputs.status == '0'
         run: |
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
 
       - name: Run tests
+        if: steps.apply_fixes.outputs.status == '0'
         run: ./gradlew test
 
       - name: Run lint
+        if: steps.apply_fixes.outputs.status == '0'
         run: ./gradlew lint
