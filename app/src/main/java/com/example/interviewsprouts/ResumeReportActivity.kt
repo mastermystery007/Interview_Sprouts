@@ -80,7 +80,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textBasicFeedback).text = applyReportFormatting(report.basicFeedback)
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
         findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
-        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = "Diamond Star Analysis with resume improvement suggestions and resume-specific interview questions is locked. Watch another ad to unlock.\n\nDiamond Star analysis sends your resume text and job description to our backend only after this second unlock."
+        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = "Get tailored resume improvements and resume-specific interview questions.\n\nYour resume text and job description are sent to the backend only after you choose to view this analysis."
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
 
         tabStrengths = findViewById(R.id.tabStrengths)
@@ -182,9 +182,9 @@ class ResumeReportActivity : AppCompatActivity() {
 
         btnUnlockAdvancedLlmReview.setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Unlock Diamond Star Analysis")
+                .setTitle("View Diamond Star Analysis")
                 .setMessage(
-                    "Watch another ad to unlock compressed AI resume suggestions " +
+                    "A short ad opens tailored resume suggestions " +
                         "and resume-specific interview questions."
                 )
                 .setPositiveButton("Watch Ad") { _, _ ->
@@ -556,22 +556,6 @@ class ResumeReportActivity : AppCompatActivity() {
     private fun applyReportFormatting(text: String): CharSequence {
         val builder = SpannableStringBuilder(text)
         val headings = listOf(
-            "Overview:",
-            "Keyword Match:",
-            "Measurable Details:",
-            "Strong Action Verbs:",
-            "Section Clarity:",
-            "Role Relevance:",
-            "Missing keywords:",
-            "Missing important sections:",
-            "Weak bullets:",
-            "Missing measurable impact:",
-            "Role Keywords Found:",
-            "Role Keywords Missing:",
-            "JD Keywords Found:",
-            "JD Keywords Not Found:",
-            "JD-specific missing points:",
-            "JD keywords already evidenced:",
             "Detailed Analysis",
             "Diamond Star Analysis",
             "Top improvement",
@@ -586,6 +570,19 @@ class ResumeReportActivity : AppCompatActivity() {
             "Target-role and experience alignment",
             "First recommended action",
             "JD Match",
+            "JD-specific gaps",
+            "Where to add them",
+            "Already evidenced",
+
+            "Score Breakdown",
+            "Relevant keyword coverage",
+            "Quantified achievement evidence",
+            "Action-oriented bullet writing",
+            "Resume section clarity",
+            "Target-role alignment",
+
+            "Target-role and experience alignment",
+            "Evidence quality",
             "Resume Structure",
             "Priority Fixes",
             "Strengths",
@@ -700,7 +697,12 @@ class ResumeReportActivity : AppCompatActivity() {
         experienceLevel: String,
         jobSpecification: String
     ): String {
-        val bullets = extractCandidateBullets(resumeText).take(4)
+        val bullets =
+            selectEvidenceHighlights(
+                resumeText,
+                targetRole,
+                jobSpecification
+            ).take(4)
         val metrics = extractMetricExamples(resumeText)
         val roleAndJdKeywords = (getKeywordsForRole(targetRole) + extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase()))
             .distinctBy { it.lowercase() }
@@ -773,6 +775,12 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
             detectAtsParserRisks(resumeText)
         val impactSignals = extractImpactSignals(resumeText)
         val toolSignals = extractToolSignals(resumeText, targetRole, jobSpecification)
+        val evidenceHighlights =
+            selectEvidenceHighlights(
+                resumeText,
+                targetRole,
+                jobSpecification
+            )
         val vaguePhrases = detectVaguePhrases(resumeText)
         val genericClaims = detectGenericClaims(resumeText)
         val responsibilityNoOutcome = detectResponsibilityWithoutOutcome(resumeText)
@@ -928,7 +936,7 @@ Keyword preview
 
 ${missingKeywords.take(3).joinToString("\n") { "• $it" }}
 
-• Unlock Gold Star Analysis for the complete role-keyword review.
+• View the full analysis for complete role-keyword recommendations.
                 """.trimIndent()
 
             else ->
@@ -937,7 +945,7 @@ Keyword preview
 
 ${missingKeywords.take(3).joinToString("\n") { "• $it" }}
 
-• Unlock Gold Star Analysis for the complete role and JD keyword review.
+• View the full analysis for complete role and JD recommendations.
                 """.trimIndent()
         }
 
@@ -950,7 +958,10 @@ ${formatExamples((foundRoleKeywords + foundJdKeywords).distinct().take(8), "No c
 
 Evidence highlights
 
-${formatExamples((impactSignals + toolSignals + extractActionVerbExamples(resumeText)).distinct().take(6), "No strong evidence lines detected yet.")}
+${formatExamples(
+            evidenceHighlights,
+            "No achievement-focused evidence lines were detected yet."
+        )}
 
 Tool and skill evidence
 
@@ -1705,6 +1716,140 @@ Priority Fixes
     private fun extractCandidateBullets(resumeText: String): List<String> = resumeLines(resumeText)
         .filter { line -> line.length >= 25 && !looksLikeHeading(line) }
         .take(12)
+
+    private fun isLikelyProfileOrTitleLine(
+        line: String
+    ): Boolean {
+        val cleaned =
+            line.trim()
+
+        val lower =
+            cleaned.lowercase()
+
+        val hasActionVerb =
+            strongActionVerbs.any { verb ->
+                Regex(
+                    "\\b${Regex.escape(verb)}\\b",
+                    RegexOption.IGNORE_CASE
+                ).containsMatchIn(cleaned)
+            }
+
+        val hasOutcome =
+            hasMeasurableImpactSignal(cleaned) ||
+                resultWords.any { lower.contains(it) }
+
+        if (hasActionVerb || hasOutcome) {
+            return false
+        }
+
+        val profilePatterns = listOf(
+            "years of experience",
+            "year of experience",
+            "software development engineer",
+            "software engineer with",
+            "developer with",
+            "engineer with",
+            "professional with",
+            "experienced professional",
+            "results-driven",
+            "highly motivated"
+        )
+
+        return profilePatterns.any {
+            lower.contains(it)
+        }
+    }
+
+    private fun selectEvidenceHighlights(
+        resumeText: String,
+        targetRole: String,
+        jobSpecification: String
+    ): List<String> {
+        val relevantKeywords =
+            (
+                getKeywordsForRole(targetRole) +
+                    extractSimpleKeywordsFromJobSpec(
+                        jobSpecification.lowercase()
+                    )
+                )
+                .distinctBy {
+                    it.lowercase()
+                }
+
+        return extractCandidateBullets(resumeText)
+            .filterNot {
+                isLikelyProfileOrTitleLine(it)
+            }
+            .map { line ->
+                val lower =
+                    line.lowercase()
+
+                var score = 0
+
+                if (hasMeasurableImpactSignal(line)) {
+                    score += 5
+                }
+
+                if (
+                    resultWords.any {
+                        lower.contains(it)
+                    }
+                ) {
+                    score += 3
+                }
+
+                if (
+                    strongActionVerbs.any { verb ->
+                        Regex(
+                            "\\b${Regex.escape(verb)}\\b",
+                            RegexOption.IGNORE_CASE
+                        ).containsMatchIn(line)
+                    }
+                ) {
+                    score += 3
+                }
+
+                if (
+                    relevantKeywords.any { keyword ->
+                        keyword.length >= 3 &&
+                            line.contains(
+                                keyword,
+                                ignoreCase = true
+                            )
+                    }
+                ) {
+                    score += 2
+                }
+
+                if (
+                    containsMeaningfulTechnicalOrProjectContent(
+                        line
+                    )
+                ) {
+                    score += 1
+                }
+
+                line to score
+            }
+            .filter {
+                it.second >= 3
+            }
+            .sortedWith(
+                compareByDescending<Pair<String, Int>> {
+                    it.second
+                }.thenByDescending {
+                    it.first.length
+                }
+            )
+            .map {
+                shortenLabel(
+                    it.first,
+                    150
+                )
+            }
+            .distinct()
+            .take(6)
+    }
 
     private fun findWeakBullets(resumeText: String): List<String> = resumeLines(resumeText)
         .filterNot { isBareStopwordFragment(it) }

@@ -62,7 +62,8 @@ class SavedReportsActivity : AppCompatActivity() {
             container.addView(
                 createReportCard(
                     report,
-                    displayPosition
+                    displayPosition,
+                    index
                 )
             )
 
@@ -78,7 +79,8 @@ class SavedReportsActivity : AppCompatActivity() {
 
     private fun createReportCard(
         report: JSONObject,
-        displayPosition: Int
+        displayPosition: Int,
+        sourceIndex: Int
     ): View {
         val score =
             report.optInt("overall_score", 0)
@@ -113,6 +115,14 @@ class SavedReportsActivity : AppCompatActivity() {
                 "$score% — " +
                 formattedDate
 
+        val previewHeadings = setOf(
+            "top improvement",
+            "why this matters",
+            "overall fit",
+            "jd status",
+            "overview"
+        )
+
         val preview = report
             .optString(
                 "basic_feedback",
@@ -124,16 +134,14 @@ class SavedReportsActivity : AppCompatActivity() {
                     .trimStart('•')
                     .trim()
             }
-            .firstOrNull {
-                it.isNotBlank() &&
-                    !it.equals(
-                        "Overview",
-                        ignoreCase = true
-                    )
+            .firstOrNull { line ->
+                line.isNotBlank() &&
+                    line.lowercase() !in previewHeadings &&
+                    !line.endsWith(":")
             }
             ?: "Saved report preview unavailable."
 
-        val card = TextView(this).apply {
+        val reportCard = TextView(this).apply {
             text = buildString {
                 appendLine(title)
 
@@ -204,17 +212,109 @@ class SavedReportsActivity : AppCompatActivity() {
             }
         }
 
-        card.layoutParams =
+        val deleteButton =
+            Button(this).apply {
+                text = "Delete Report"
+
+                setOnClickListener {
+                    AlertDialog.Builder(
+                        this@SavedReportsActivity
+                    )
+                        .setTitle(
+                            "Delete saved report?"
+                        )
+                        .setMessage(
+                            "This removes only this saved report from this device."
+                        )
+                        .setPositiveButton(
+                            "Delete"
+                        ) { _, _ ->
+                            deleteSavedReportAt(
+                                sourceIndex
+                            )
+                        }
+                        .setNegativeButton(
+                            "Cancel",
+                            null
+                        )
+                        .show()
+                }
+            }
+
+        reportCard.layoutParams =
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams
                     .MATCH_PARENT,
                 LinearLayout.LayoutParams
                     .WRAP_CONTENT
+            )
+
+        deleteButton.layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(8)
+            }
+
+        val wrapper =
+            LinearLayout(this).apply {
+                orientation =
+                    LinearLayout.VERTICAL
+
+                addView(reportCard)
+                addView(deleteButton)
+            }
+
+        wrapper.layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 bottomMargin = dp(12)
             }
 
-        return card
+        return wrapper
+    }
+
+    private fun deleteSavedReportAt(
+        sourceIndex: Int
+    ) {
+        val reports =
+            loadReportsSafely()
+
+        if (
+            sourceIndex < 0 ||
+            sourceIndex >= reports.length()
+        ) {
+            return
+        }
+
+        val rebuilt =
+            JSONArray()
+
+        for (
+            index in 0 until reports.length()
+        ) {
+            if (index != sourceIndex) {
+                reports.opt(index)?.let {
+                    rebuilt.put(it)
+                }
+            }
+        }
+
+        getSharedPreferences(
+            PREFS_NAME,
+            MODE_PRIVATE
+        )
+            .edit()
+            .putString(
+                KEY_REPORTS,
+                rebuilt.toString()
+            )
+            .apply()
+
+        refreshReports()
     }
 
     private fun formatSavedDate(
@@ -227,11 +327,12 @@ class SavedReportsActivity : AppCompatActivity() {
             return "Date not saved"
         }
 
-        val inputFormat =
-            SimpleDateFormat(
-                "yyyy-MM-dd HH:mm",
-                Locale.US
-            )
+        val inputPatterns = listOf(
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd"
+        )
 
         val outputFormat =
             SimpleDateFormat(
@@ -239,18 +340,28 @@ class SavedReportsActivity : AppCompatActivity() {
                 Locale.US
             )
 
-        return try {
-            val parsed =
-                inputFormat.parse(rawTimestamp)
+        for (pattern in inputPatterns) {
+            try {
+                val inputFormat =
+                    SimpleDateFormat(
+                        pattern,
+                        Locale.US
+                    ).apply {
+                        isLenient = false
+                    }
 
-            if (parsed == null) {
-                rawTimestamp
-            } else {
-                outputFormat.format(parsed)
+                val parsed =
+                    inputFormat.parse(rawTimestamp)
+
+                if (parsed != null) {
+                    return outputFormat.format(parsed)
+                }
+            } catch (_: Exception) {
+                // Try the next supported format.
             }
-        } catch (_: Exception) {
-            rawTimestamp
         }
+
+        return rawTimestamp
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

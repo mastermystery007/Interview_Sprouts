@@ -378,7 +378,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:text="Unlock Diamond Star Analysis"
+            android:text="Diamond Star Analysis"
             android:textColor="#111111"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -407,7 +407,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Watch Ad to Unlock Diamond Star Analysis"
+            android:text="Watch Ad to View AI Analysis"
             android:visibility="gone" />
 
         <TextView
