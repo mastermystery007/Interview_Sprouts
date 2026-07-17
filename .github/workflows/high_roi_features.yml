@@ -3,9 +3,9 @@ name: Verify high ROI features
 on:
   push:
     branches:
-      - direct/high-roi-features
+      - main
     paths:
-      - .github/high-roi-trigger.txt
+      - .github/workflows/high_roi_features.yml
 
 permissions:
   contents: write
