@@ -32,6 +32,18 @@ jobs:
       - name: Apply branding and disclosure changes
         run: python .github/apply_resume_refine.py
 
+      - name: Commit transformed application changes to pull request branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app backend settings.gradle.kts .idea/.name
+          if git diff --cached --quiet; then
+            echo "No application changes to commit."
+          else
+            git commit -m "Rename app to Resume Refine and clarify AI processing"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+
       - name: Build debug APK
         run: |
           chmod +x gradlew
@@ -42,15 +54,3 @@ jobs:
 
       - name: Run Android lint
         run: ./gradlew lint
-
-      - name: Commit verified application changes to pull request branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app backend settings.gradle.kts .idea/.name
-          if git diff --cached --quiet; then
-            echo "No application changes to commit."
-            exit 0
-          fi
-          git commit -m "Rename app to Resume Refine and clarify AI processing"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
