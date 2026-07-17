@@ -149,7 +149,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="Job description"
+                android:text="Paste JD for tailored matching (optional)"
                 android:textColor="#111111"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -160,20 +160,12 @@
                 android:layout_height="180dp"
                 android:layout_marginTop="7dp"
                 android:background="@drawable/bg_input_field"
-                android:gravity="top"
-                android:hint="Optional: paste JD for tailored matching"
+                android:gravity="top|start"
+                android:hint="Paste the job description here to get more accurate role matching, missing-skill checks, and JD-specific interview questions."
                 android:inputType="textMultiLine"
                 android:padding="12dp"
                 android:textColor="#111111"
                 android:textColorHint="#777777" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="Add a job description for custom suggestions, missing-skill checks, sharper role matching, and JD-specific interview questions."
-                android:textColor="#64748B"
-                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView

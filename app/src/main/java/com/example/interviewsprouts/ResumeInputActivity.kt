@@ -26,7 +26,7 @@ class ResumeInputActivity : AppCompatActivity() {
 
     private val professionList = listOf(
         "Software Engineer",
-        "Android Engineer",
+        "Android Developer",
         "iOS Developer",
         "Backend Software Engineer",
         "Frontend Software Engineer",
@@ -40,7 +40,7 @@ class ResumeInputActivity : AppCompatActivity() {
         "Site Reliability Engineer (SRE)",
         "QA Automation Engineer / SDET",
         "Embedded Software Engineer",
-        "Security Engineer",
+        "Cybersecurity Analyst",
         "Game Developer",
         "Business Analyst",
         "Product Manager",

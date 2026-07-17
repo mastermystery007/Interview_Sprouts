@@ -63,12 +63,11 @@ class ResumeReportActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.textScoreValue).apply {
             text = scoreLabel
-            textSize =
-                if (scoreLabel.length > 12) {
-                    20f
-                } else {
-                    24f
-                }
+            textSize = when {
+                scoreLabel.length >= 17 -> 16f
+                scoreLabel.length >= 13 -> 18f
+                else -> 24f
+            }
         }
         findViewById<TextView>(R.id.textAlignmentLabel).text = alignmentLabel(report.overallScore)
         findViewById<TextView>(R.id.textJdChip).text = if (jdProvided) "JD: Attached" else "JD: Not attached"
@@ -558,51 +557,63 @@ class ResumeReportActivity : AppCompatActivity() {
         val headings = listOf(
             "Detailed Analysis",
             "Diamond Star Analysis",
+            "Resume Improvement Suggestions",
+            "Resume-Specific Interview Questions",
             "Top improvement",
             "Why this matters",
-            "Evidence quality",
-            "Score Breakdown",
-            "Relevant keyword coverage",
-            "Quantified achievement evidence",
-            "Action-oriented bullet writing",
-            "Resume section clarity",
-            "Target-role alignment",
-            "Target-role and experience alignment",
+            "Overall fit",
+            "JD status",
+            "Keyword preview",
+            "Missing role evidence",
+            "Weak or vague bullets",
+            "Quantified impact",
             "First recommended action",
+            "Strengths",
+            "Role signals found",
+            "Evidence highlights",
+            "Tool and skill evidence",
+            "Keywords",
+            "Role keywords found",
+            "Role keywords to strengthen",
+            "JD keywords found",
+            "JD keywords to strengthen",
+            "Suggested placement",
             "JD Match",
             "JD-specific gaps",
             "Where to add them",
             "Already evidenced",
-
             "Score Breakdown",
             "Relevant keyword coverage",
             "Quantified achievement evidence",
             "Action-oriented bullet writing",
             "Resume section clarity",
             "Target-role alignment",
-
             "Target-role and experience alignment",
             "Evidence quality",
             "Resume Structure",
             "Priority Fixes",
-            "Strengths",
-            "Keywords",
-            "Experience level match:",
-            "Main evidence weakness:",
+            "Top improvement:",
+            "Main concern:",
+            "Measurable impact:",
+            "Section clarity:",
             "Main structure concern:",
-            "Category Findings:",
-            "Role Fit:",
-            "World-Class Scorecard:",
-            "JD Missing Skills Impact:",
-            "Evidence Quality:",
-            "Recruiter Red Flags:",
-            "Priority Fixes:",
-            "High-priority JD signals:",
-            "Best placement:",
-            "Missing skills impact:",
-            "Bullet quality issues:",
-            "Main hiring concern:",
-            "Archetype:"
+            "Strengthen:",
+            "Add:",
+            "Rewrite:",
+            "Status:",
+            "Current analysis:",
+            "For more tailored matching:",
+            "Keywords found:",
+            "Keywords not clearly evidenced:",
+            "Target role:",
+            "Achievement evidence:",
+            "Weak or missing evidence:",
+            "Measurable evidence:",
+            "Matched JD evidence:",
+            "Not clearly evidenced:",
+            "Overall alignment",
+            "Experience-level evidence",
+            "Assessment"
         )
         headings.forEach { heading ->
             applySpanToMatches(text, heading) { start, end ->
@@ -613,12 +624,23 @@ class ResumeReportActivity : AppCompatActivity() {
         val positiveColor = Color.rgb(24, 128, 82)
         val gapColor = Color.rgb(190, 82, 32)
         val positiveSignals = listOf(
-            "Found keywords:", "Role Keywords Found:", "JD Keywords Found:", "Strong evidence",
-            "Clearly evidenced", "Proof signal"
+            "Found keywords:",
+            "Role Keywords Found:",
+            "JD Keywords Found:",
+            "Clearly evidenced",
+            "Proof signal"
         )
         val gapSignals = listOf(
-            "Missing keywords:", "Role Keywords Missing:", "JD Keywords Not Found:", "Weak bullets:", "Missing measurable impact:", "Main gap",
-            "High:", "Main hiring concern:", "Interview risk:", "Recruiter Red Flags:", "Not clearly evidenced"
+            "Missing keywords:",
+            "Role Keywords Missing:",
+            "JD Keywords Not Found:",
+            "Weak bullets:",
+            "Missing measurable impact:",
+            "Main gap:",
+            "Main hiring concern:",
+            "Interview risk:",
+            "Recruiter Red Flags:",
+            "Not clearly evidenced"
         )
         positiveSignals.forEach { signal ->
             applySpanToMatches(text, signal) { start, end ->
@@ -645,29 +667,29 @@ class ResumeReportActivity : AppCompatActivity() {
         val warningColor = Color.rgb(190, 82, 32)
 
         val positivePattern = Regex(
-            """(?m)^\s*(Excellent|Good|Strong role fit|Good role fit)\s*$""",
-            RegexOption.IGNORE_CASE
+            """(?im)(?:^|[—–:]\s*)(Strong role fit|Good role fit|Excellent|Good)(?=\s*$)"""
         )
 
         val warningPattern = Regex(
-            """(?m)^\s*(Needs Improvement|Lacking|Moderate role fit|Low role fit)\s*$""",
-            RegexOption.IGNORE_CASE
+            """(?im)(?:^|[—–:]\s*)(Needs Improvement|Lacking|Moderate role fit|Low role fit)(?=\s*$)"""
         )
 
         positivePattern.findAll(text).forEach { match ->
+            val status = match.groups[1] ?: return@forEach
             builder.setSpan(
                 ForegroundColorSpan(positiveColor),
-                match.range.first,
-                match.range.last + 1,
+                status.range.first,
+                status.range.last + 1,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
 
         warningPattern.findAll(text).forEach { match ->
+            val status = match.groups[1] ?: return@forEach
             builder.setSpan(
                 ForegroundColorSpan(warningColor),
-                match.range.first,
-                match.range.last + 1,
+                status.range.first,
+                status.range.last + 1,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
@@ -715,7 +737,7 @@ class ResumeReportActivity : AppCompatActivity() {
             ?: "Measurable evidence: no clear metrics detected; add numbers only where verifiable."
         val advanced = listOf(
             "Target role: $targetRole ($experienceLevel).",
-            "Strong evidence: ${bullets.take(2).joinToString("; ").ifBlank { "Add clearer role evidence from your resume." }}",
+            "Achievement evidence: ${bullets.take(2).joinToString("; ").ifBlank { "No achievement-focused evidence was detected yet." }}",
             "Weak or missing evidence: ${missingJd.take(3).joinToString(", ").ifBlank { "No major JD-specific weakness detected from available text." }}",
             metricSummary
         ).joinToString("\n") { "• $it" }
@@ -1230,11 +1252,6 @@ Priority Fixes
         return (30 + signals * 10).coerceIn(20, 95)
     }
 
-    private fun calculateProjectExperienceDepthScore(resumeText: String): Int {
-        val lines = extractCandidateBullets(resumeText)
-        val depth = lines.count { line -> containsMeaningfulTechnicalOrProjectContent(line) && (hasMeasurableImpactSignal(line) || strongActionVerbs.any { line.contains(it, true) }) }
-        return (35 + depth * 9).coerceIn(20, 95)
-    }
 
     private fun calculateResponsibilityOutcomeScore(resumeText: String): Int = (80 - detectResponsibilityWithoutOutcome(resumeText).size * 10 + extractImpactSignals(resumeText).size * 4).coerceIn(20, 95)
 
@@ -1288,53 +1305,7 @@ Priority Fixes
         return if (score >= 70) "Experience level is supported by ownership, scope, or delivery signals." else "Experience level is partly supported, but leadership, scope, or delivery evidence is thin."
     }
 
-    private fun rankGapSeverity(
-        resumeText: String,
-        targetRole: String,
-        jobSpecification: String
-    ): String {
-        val lower = resumeText.lowercase()
-        val missingCount = (getKeywordsForRole(targetRole) + extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase()))
-            .distinctBy { it.lowercase() }
-            .count { !lower.contains(it.lowercase()) }
 
-        return when {
-            missingCount >= 8 -> "High"
-            missingCount >= 4 -> "Medium"
-            else -> "Low"
-        }
-    }
-
-    private fun detectRecruiterRedFlags(
-        resumeText: String,
-        targetRole: String,
-        experienceLevel: String,
-        jobSpecification: String
-    ): List<String> {
-        val flags = mutableListOf<String>()
-
-        if (resumeText.length < 600) {
-            flags.add("Resume may be too short to show enough role evidence.")
-        }
-
-        if (detectSectionSignals(resumeText).size < 3) {
-            flags.add("Important resume sections are not clearly visible.")
-        }
-
-        if (extractImpactSignals(resumeText).isEmpty()) {
-            flags.add("Measurable outcomes are not clearly shown.")
-        }
-
-        if (extractToolSignals(resumeText, targetRole, jobSpecification).isEmpty()) {
-            flags.add("Tools or skills are not clearly connected to work evidence.")
-        }
-
-        if (detectVaguePhrases(resumeText).isNotEmpty()) {
-            flags.add("Some lines sound vague or generic.")
-        }
-
-        return flags.distinct().take(5)
-    }
 
     private fun detectAtsParserRisks(resumeText: String): List<String> {
         val risks = mutableListOf<String>()
@@ -1359,30 +1330,6 @@ Priority Fixes
         return risks.distinct().take(5)
     }
 
-    private fun diagnoseBulletQuality(resumeText: String): List<String> {
-        val issues = mutableListOf<String>()
-        val weakBullets = findWeakBullets(resumeText)
-        val vague = detectVaguePhrases(resumeText)
-        val noOutcome = detectResponsibilityWithoutOutcome(resumeText)
-
-        if (weakBullets.isNotEmpty()) {
-            issues.add("Some bullets need stronger action and clearer results.")
-        }
-
-        if (vague.isNotEmpty()) {
-            issues.add("Some bullets use vague wording.")
-        }
-
-        if (noOutcome.isNotEmpty()) {
-            issues.add("Some responsibility lines do not show outcomes.")
-        }
-
-        if (extractImpactSignals(resumeText).isEmpty()) {
-            issues.add("Few measurable outcomes are visible.")
-        }
-
-        return issues.distinct().take(5)
-    }
 
     private fun calculateKeywordMatchScore(foundCount: Int, totalCount: Int): Int {
         if (totalCount == 0) return 45
@@ -1541,13 +1488,13 @@ Priority Fixes
 
         if (
             jobSpecification.isNotBlank() &&
-            jdRoleMatchScore < 15
+            jdRoleMatchScore <= 20
         ) {
             cappedScore =
                 minOf(cappedScore, 60)
         }
 
-        if (measurableImpactScore < 20) {
+        if (measurableImpactScore < 40) {
             cappedScore =
                 minOf(cappedScore, 78)
         }
@@ -1623,7 +1570,12 @@ Priority Fixes
         )
         val impactWords = listOf("improved", "reduced", "increased", "saved", "optimized", "accelerated", "streamlined", "delivered", "resolved")
         val unitPattern = impactUnits.joinToString("|")
-        val hasImpactUnitNearNumber = Regex("\\b\\d+(?:[.,]\\d+)?\\+?\\s*(?:$unitPattern)\\b|\\b(?:$impactUnits)\\b\\W{0,24}\\b\\d+(?:[.,]\\d+)?\\+?\\b", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
+        val hasImpactUnitNearNumber = Regex(
+            "\\b\\d+(?:[.,]\\d+)?\\+?\\s*(?:$unitPattern)\\b|" +
+                "\\b(?:$unitPattern)\\b\\W{0,24}" +
+                "\\b\\d+(?:[.,]\\d+)?\\+?\\b",
+            RegexOption.IGNORE_CASE
+        ).containsMatchIn(cleaned)
         val hasNumberAndImpactWord = hasNumber && impactWords.any { lower.contains(it) }
         return hasPercentage || hasCurrency || hasImpactUnitNearNumber || hasNumberAndImpactWord
     }
