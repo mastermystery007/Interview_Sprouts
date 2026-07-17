@@ -1,2 +1,2 @@
 Apply the remaining report, role-name, and JD-field fixes.
-Retry: run from the actual PR head branch.
+Retry: preserve the workflow file while committing source changes.
