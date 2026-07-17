@@ -20,9 +20,18 @@ Built an Android checkout flow in Kotlin and reduced payment failures by 18%.
             jdKeywords = listOf("Kotlin")
         )
 
-        val kotlinEvidence = result.requirements.first { it.requirement == "Kotlin" }
-        assertEquals("Clearly evidenced", kotlinEvidence.status)
-        assertTrue(kotlinEvidence.confidence >= 0.90)
+        val kotlinEvidence =
+            result.requirements.first {
+                it.requirement == "Kotlin"
+            }
+
+        assertEquals(
+            "Clearly evidenced",
+            kotlinEvidence.status
+        )
+        assertTrue(
+            kotlinEvidence.confidence >= 0.90
+        )
     }
 
     @Test
@@ -32,25 +41,81 @@ Built an Android checkout flow in Kotlin and reduced payment failures by 18%.
 Projects
 Deployed a service to K8s and reduced release time by 30%.
             """.trimIndent(),
-            jobDescription = "Kubernetes experience is required.",
+            jobDescription =
+                "Kubernetes experience is required.",
             roleKeywords = emptyList(),
             jdKeywords = listOf("Kubernetes")
         )
 
-        assertTrue(result.confidenceFor("Kubernetes") >= 0.90)
+        assertTrue(
+            result.confidenceFor("Kubernetes") >= 0.90
+        )
     }
 
     @Test
     fun weakBulletPreviewDoesNotInventAnOutcome() {
-        val preview = EvidenceAwareMatcher.buildBulletPreview(
-            resumeText = """
+        val preview =
+            EvidenceAwareMatcher.buildBulletPreview(
+                resumeText = """
 Experience
 Responsible for Android application development.
-            """.trimIndent(),
-            relevantKeywords = listOf("Android")
-        )
+                """.trimIndent(),
+                relevantKeywords = listOf("Android")
+            )
 
-        assertTrue(preview.improvedStructure.contains("[truthful outcome or metric]"))
-        assertTrue(preview.weakness.contains("responsibility", ignoreCase = true))
+        assertTrue(
+            preview.improvedStructure.contains(
+                "[truthful outcome or metric]"
+            )
+        )
+        assertTrue(
+            preview.weakness.contains(
+                "responsibility",
+                ignoreCase = true
+            )
+        )
+    }
+
+    @Test
+    fun companyLocationAndDateLineIsNotSelectedAsWeakBullet() {
+        val preview =
+            EvidenceAwareMatcher.buildBulletPreview(
+                resumeText = """
+Experience
+Google | Bangalore, May 2024-25
+Software Development Engineer
+Responsible for Android application development and release support.
+                """.trimIndent(),
+                relevantKeywords = listOf("Android")
+            )
+
+        assertEquals(
+            "Responsible for Android application development and release support.",
+            preview.original
+        )
+    }
+
+    @Test
+    fun metadataOnlyResumeUsesSafeGenericFallback() {
+        val preview =
+            EvidenceAwareMatcher.buildBulletPreview(
+                resumeText = """
+Experience
+Google | Bangalore, May 2024-25
+Software Development Engineer
+                """.trimIndent(),
+                relevantKeywords = listOf("Android")
+            )
+
+        assertEquals(
+            "No suitable experience or project bullet was detected.",
+            preview.original
+        )
+        assertTrue(
+            preview.weakness.contains(
+                "Company names",
+                ignoreCase = true
+            )
+        )
     }
 }
