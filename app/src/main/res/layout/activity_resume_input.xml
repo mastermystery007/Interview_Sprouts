@@ -23,8 +23,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:textAlignment="center"
                 android:text="Resume Review"
+                android:textAlignment="center"
                 android:textColor="#111111"
                 android:textSize="28sp"
                 android:textStyle="bold" />
@@ -34,8 +34,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:gravity="center"
+                android:text="Upload or paste your resume, then compare it against a target role or job description."
                 android:textAlignment="center"
-                android:text="Upload your resume and compare it against your target role or job description."
                 android:textColor="#334155"
                 android:textSize="15sp" />
         </LinearLayout>
@@ -52,8 +52,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
+                android:text="Resume"
                 android:textAlignment="center"
-                android:text="Resume PDF"
                 android:textColor="#111111"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -62,7 +62,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Attach a PDF resume to analyze its extracted text."
+                android:text="Upload a PDF or DOCX, or paste resume text below. Extracted text remains editable."
                 android:textColor="#475569"
                 android:textSize="13sp" />
 
@@ -71,7 +71,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="Upload Resume PDF" />
+                android:text="Upload PDF or DOCX" />
 
             <TextView
                 android:id="@+id/textAttachedFile"
@@ -88,9 +88,31 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Upload a PDF resume before analysis."
+                android:text="Upload a file or paste resume text before analysis."
                 android:textColor="#64748B"
                 android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Resume text"
+                android:textColor="#111111"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/editResumeText"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/bg_input_field"
+                android:gravity="top|start"
+                android:hint="Paste your resume text here, or edit the text extracted from your PDF or DOCX."
+                android:inputType="textMultiLine"
+                android:padding="12dp"
+                android:textColor="#111111"
+                android:textColorHint="#777777" />
         </LinearLayout>
 
         <LinearLayout
@@ -105,8 +127,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:textAlignment="center"
                 android:text="Target details"
+                android:textAlignment="center"
                 android:textColor="#111111"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -161,7 +183,7 @@
                 android:layout_marginTop="7dp"
                 android:background="@drawable/bg_input_field"
                 android:gravity="top|start"
-                android:hint="Paste the job description here to get more accurate role matching, missing-skill checks, and JD-specific interview questions."
+                android:hint="Paste the job description here to get more accurate requirement weighting, evidence matching, and JD-specific interview questions."
                 android:inputType="textMultiLine"
                 android:padding="12dp"
                 android:textColor="#111111"
