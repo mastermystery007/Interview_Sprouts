@@ -62,7 +62,8 @@ class SavedReportsActivity : AppCompatActivity() {
             container.addView(
                 createReportCard(
                     report,
-                    displayPosition
+                    displayPosition,
+                    index
                 )
             )
 
@@ -78,7 +79,8 @@ class SavedReportsActivity : AppCompatActivity() {
 
     private fun createReportCard(
         report: JSONObject,
-        displayPosition: Int
+        displayPosition: Int,
+        sourceIndex: Int
     ): View {
         val score =
             report.optInt("overall_score", 0)
@@ -204,17 +206,71 @@ class SavedReportsActivity : AppCompatActivity() {
             }
         }
 
+        val deleteButton = Button(this).apply {
+            text = "Delete Report"
+            setOnClickListener {
+                AlertDialog.Builder(this@SavedReportsActivity)
+                    .setTitle("Delete saved report?")
+                    .setMessage("This removes only this saved report from this device.")
+                    .setPositiveButton("Delete") { _, _ ->
+                        deleteSavedReportAt(sourceIndex)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+
         card.layoutParams =
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams
                     .MATCH_PARENT,
                 LinearLayout.LayoutParams
                     .WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(12)
-            }
+            )
 
-        return card
+        val cardContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(card)
+            addView(deleteButton)
+        }
+
+        cardContainer.layoutParams =
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(12) }
+
+        return cardContainer
+    }
+
+    private fun deleteSavedReportAt(
+        sourceIndex: Int
+    ) {
+        val reports =
+            loadReportsSafely()
+
+        val rebuilt =
+            JSONArray()
+
+        for (index in 0 until reports.length()) {
+            if (index != sourceIndex) {
+                reports.optJSONObject(index)?.let {
+                    rebuilt.put(it)
+                }
+            }
+        }
+
+        getSharedPreferences(
+            PREFS_NAME,
+            MODE_PRIVATE
+        ).edit()
+            .putString(
+                KEY_REPORTS,
+                rebuilt.toString()
+            )
+            .apply()
+
+        refreshReports()
     }
 
     private fun formatSavedDate(
