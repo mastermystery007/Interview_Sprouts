@@ -63,12 +63,12 @@ class ResumeReportActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.textScoreValue).apply {
             text = scoreLabel
-
-            textSize = when {
-                scoreLabel.length >= 17 -> 16f
-                scoreLabel.length >= 13 -> 18f
-                else -> 24f
-            }
+            textSize =
+                if (scoreLabel.length > 12) {
+                    20f
+                } else {
+                    24f
+                }
         }
         findViewById<TextView>(R.id.textAlignmentLabel).text = alignmentLabel(report.overallScore)
         findViewById<TextView>(R.id.textJdChip).text = if (jdProvided) "JD: Attached" else "JD: Not attached"
@@ -558,32 +558,17 @@ class ResumeReportActivity : AppCompatActivity() {
         val headings = listOf(
             "Detailed Analysis",
             "Diamond Star Analysis",
-            "Resume Improvement Suggestions",
-            "Resume-Specific Interview Questions",
-            "Achievement evidence:",
-
             "Top improvement",
             "Why this matters",
-            "Overall fit",
-            "JD status",
-
-            "Missing role evidence",
-            "Weak or vague bullets",
-            "Quantified impact",
+            "Evidence quality",
+            "Score Breakdown",
+            "Relevant keyword coverage",
+            "Quantified achievement evidence",
+            "Action-oriented bullet writing",
+            "Resume section clarity",
+            "Target-role alignment",
+            "Target-role and experience alignment",
             "First recommended action",
-
-            "Strengths",
-            "Role signals found",
-            "Evidence highlights",
-            "Tool and skill evidence",
-
-            "Keywords",
-            "Role keywords found",
-            "Role keywords to strengthen",
-            "JD keywords found",
-            "JD keywords to strengthen",
-            "Suggested placement",
-
             "JD Match",
             "JD-specific gaps",
             "Where to add them",
@@ -600,21 +585,24 @@ class ResumeReportActivity : AppCompatActivity() {
             "Evidence quality",
             "Resume Structure",
             "Priority Fixes",
-
-            "Top improvement:",
-            "Main concern:",
-            "Measurable impact:",
-            "Section clarity:",
+            "Strengths",
+            "Keywords",
+            "Experience level match:",
+            "Main evidence weakness:",
             "Main structure concern:",
-            "Strengthen:",
-            "Add:",
-            "Rewrite:",
-
-            "Status:",
-            "Current analysis:",
-            "For more tailored matching:",
-            "Keywords found:",
-            "Keywords not clearly evidenced:"
+            "Category Findings:",
+            "Role Fit:",
+            "World-Class Scorecard:",
+            "JD Missing Skills Impact:",
+            "Evidence Quality:",
+            "Recruiter Red Flags:",
+            "Priority Fixes:",
+            "High-priority JD signals:",
+            "Best placement:",
+            "Missing skills impact:",
+            "Bullet quality issues:",
+            "Main hiring concern:",
+            "Archetype:"
         )
         headings.forEach { heading ->
             applySpanToMatches(text, heading) { start, end ->
@@ -625,23 +613,12 @@ class ResumeReportActivity : AppCompatActivity() {
         val positiveColor = Color.rgb(24, 128, 82)
         val gapColor = Color.rgb(190, 82, 32)
         val positiveSignals = listOf(
-            "Found keywords:",
-            "Role Keywords Found:",
-            "JD Keywords Found:",
-            "Clearly evidenced",
-            "Proof signal"
+            "Found keywords:", "Role Keywords Found:", "JD Keywords Found:", "Strong evidence",
+            "Clearly evidenced", "Proof signal"
         )
         val gapSignals = listOf(
-            "Missing keywords:",
-            "Role Keywords Missing:",
-            "JD Keywords Not Found:",
-            "Weak bullets:",
-            "Missing measurable impact:",
-            "Main gap:",
-            "Main hiring concern:",
-            "Interview risk:",
-            "Recruiter Red Flags:",
-            "Not clearly evidenced"
+            "Missing keywords:", "Role Keywords Missing:", "JD Keywords Not Found:", "Weak bullets:", "Missing measurable impact:", "Main gap",
+            "High:", "Main hiring concern:", "Interview risk:", "Recruiter Red Flags:", "Not clearly evidenced"
         )
         positiveSignals.forEach { signal ->
             applySpanToMatches(text, signal) { start, end ->
@@ -664,46 +641,33 @@ class ResumeReportActivity : AppCompatActivity() {
         builder: SpannableStringBuilder,
         text: String
     ) {
-        val positiveColor =
-            Color.rgb(24, 128, 82)
-
-        val warningColor =
-            Color.rgb(190, 82, 32)
+        val positiveColor = Color.rgb(24, 128, 82)
+        val warningColor = Color.rgb(190, 82, 32)
 
         val positivePattern = Regex(
-            """(?im)(?:^|[—–:]\s*)(Strong role fit|Good role fit|Excellent|Good)\s*$"""
+            """(?m)^\s*(Excellent|Good|Strong role fit|Good role fit)\s*$""",
+            RegexOption.IGNORE_CASE
         )
 
         val warningPattern = Regex(
-            """(?im)(?:^|[—–:]\s*)(Needs Improvement|Lacking|Moderate role fit|Low role fit)\s*$"""
+            """(?m)^\s*(Needs Improvement|Lacking|Moderate role fit|Low role fit)\s*$""",
+            RegexOption.IGNORE_CASE
         )
 
         positivePattern.findAll(text).forEach { match ->
-            val statusGroup =
-                match.groups[1]
-                    ?: return@forEach
-
             builder.setSpan(
-                ForegroundColorSpan(
-                    positiveColor
-                ),
-                statusGroup.range.first,
-                statusGroup.range.last + 1,
+                ForegroundColorSpan(positiveColor),
+                match.range.first,
+                match.range.last + 1,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
 
         warningPattern.findAll(text).forEach { match ->
-            val statusGroup =
-                match.groups[1]
-                    ?: return@forEach
-
             builder.setSpan(
-                ForegroundColorSpan(
-                    warningColor
-                ),
-                statusGroup.range.first,
-                statusGroup.range.last + 1,
+                ForegroundColorSpan(warningColor),
+                match.range.first,
+                match.range.last + 1,
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
         }
