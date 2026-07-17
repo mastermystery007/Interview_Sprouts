@@ -121,4 +121,4 @@ print("Changed files:")
 for item in sorted(changed):
     print(item)
 
-# Trigger build diagnostics for the transformed branch.
+# Retrigger diagnostics with forced build-log capture.
