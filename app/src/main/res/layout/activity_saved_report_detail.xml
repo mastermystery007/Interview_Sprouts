@@ -66,6 +66,36 @@
             android:textSize="15sp" />
 
         <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="Use This Report"
+            android:textColor="#111111"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnCopySavedReport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Copy Report" />
+
+        <Button
+            android:id="@+id/btnShareSavedReport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Share Report" />
+
+        <Button
+            android:id="@+id/btnExportSavedReportPdf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Export Report as PDF" />
+
+        <TextView
             android:id="@+id/textSavedReportDetailNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
