@@ -121,4 +121,4 @@ print("Changed files:")
 for item in sorted(changed):
     print(item)
 
-# Retrigger diagnostics with forced build-log capture.
+# Retrigger verification after fixing Android theme resource identifiers.
