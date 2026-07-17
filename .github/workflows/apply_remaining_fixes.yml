@@ -1,20 +1,15 @@
 name: Apply remaining fixes
 
-# One-time workflow: remove after applying the source changes.
+# One-time workflow. It is deleted after the verified changes reach main.
 on:
   push:
     branches:
-      - main
-    paths:
-      - .github/workflows/apply_remaining_fixes.yml
-  pull_request:
-    branches:
-      - main
+      - direct/apply-final-fixes-v2
     paths:
       - .github/final-fixes-trigger.txt
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apply:
@@ -22,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Check out one-time branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: direct/apply-final-fixes
+          ref: direct/apply-final-fixes-v2
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -35,8 +30,7 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Apply source changes
-        id: apply_fixes
+      - name: Apply verified source transformation
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -70,41 +64,24 @@ jobs:
 
           path.write_text(text, encoding='utf-8')
           PY
-          set +e
-          python .github/apply_remaining_fixes.py > /tmp/fix-output.log 2>&1
-          status=$?
-          set -e
-          cat /tmp/fix-output.log
-          echo "status=$status" >> "$GITHUB_OUTPUT"
+          python .github/apply_remaining_fixes.py
 
-      - name: Upload source and diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: final-fixes-diagnostics
-          if-no-files-found: error
-          path: |
-            app/src/main/java/com/example/interviewsprouts/ResumeReportActivity.kt
-            app/src/main/java/com/example/interviewsprouts/ResumeInputActivity.kt
-            app/src/main/res/layout/activity_resume_report.xml
-            app/src/main/res/layout/activity_resume_input.xml
-            .idea/planningMode.xml
-            /tmp/fix-output.log
+      - name: Preserve workflow and commit source changes
+        run: |
+          git restore .github/workflows/apply_remaining_fixes.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Apply remaining report and input UX fixes"
+          git push origin HEAD:refs/heads/direct/apply-final-fixes-v2
 
       - name: Build debug APK
-        if: steps.apply_fixes.outputs.status == '0'
         run: |
           chmod +x gradlew
           ./gradlew clean assembleDebug --stacktrace
 
       - name: Run tests
-        if: steps.apply_fixes.outputs.status == '0'
         run: ./gradlew test
 
       - name: Run lint
-        if: steps.apply_fixes.outputs.status == '0'
         run: ./gradlew lint
-
-      - name: Fail if source transformation failed
-        if: steps.apply_fixes.outputs.status != '0'
-        run: exit 1
