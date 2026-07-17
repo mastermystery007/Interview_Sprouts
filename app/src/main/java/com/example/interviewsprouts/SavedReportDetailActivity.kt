@@ -51,7 +51,7 @@ class SavedReportDetailActivity : AppCompatActivity() {
         val fullText =
             "Detailed Analysis\n\n${report.optString("full_report", "Detailed report not available.")}"
         val shareableText = """
-InterviewSprout Resume Report
+Resume Refine Report
 
 $metaText
 
@@ -69,22 +69,22 @@ $fullText
         )
 
         findViewById<Button>(R.id.btnCopySavedReport).setOnClickListener {
-            ReportShareUtils.copyText(this, "InterviewSprout report", shareableText)
+            ReportShareUtils.copyText(this, "Resume Refine report", shareableText)
             Toast.makeText(this, "Report copied.", Toast.LENGTH_SHORT).show()
         }
         findViewById<Button>(R.id.btnShareSavedReport).setOnClickListener {
             ReportShareUtils.shareText(
                 this,
                 "Share saved report",
-                "InterviewSprout report for $targetRole",
+                "Resume Refine report for $targetRole",
                 shareableText
             )
         }
         findViewById<Button>(R.id.btnExportSavedReportPdf).setOnClickListener {
             ReportShareUtils.exportPdf(
                 this,
-                "InterviewSprout_${targetRole}_$score",
-                "InterviewSprout Resume Report",
+                "Resume_Refine_${targetRole}_$score",
+                "Resume Refine Report",
                 shareableText
             )
         }

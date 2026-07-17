@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Interview Sprouts"
+rootProject.name = "Resume Refine"
 include(":app")

@@ -79,7 +79,7 @@ class ResumeReportActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.textBasicFeedback).text = applyReportFormatting(report.basicFeedback)
         findViewById<TextView>(R.id.textMissingKeywordsHook).text = report.missingKeywordsHook
         findViewById<TextView>(R.id.textFullReport).text = applyReportFormatting(report.fullReport)
-        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = "Get tailored resume improvements and resume-specific interview questions.\n\nYour resume text and job description are sent to the backend only after you choose to view this analysis."
+        findViewById<TextView>(R.id.textAdvancedLockedMessage).text = "Diamond Star uses an external AI model.\n\nAfter you continue, your resume text and optional job description will be sent through our server to DeepSeek for analysis. Remove personal or sensitive information you do not want processed by the AI provider."
         findViewById<TextView>(R.id.textLocalSaveNote).text = "Saved reports are stored locally on this device only."
 
         tabStrengths = findViewById(R.id.tabStrengths)
@@ -183,8 +183,11 @@ class ResumeReportActivity : AppCompatActivity() {
             AlertDialog.Builder(this)
                 .setTitle("View Diamond Star Analysis")
                 .setMessage(
-                    "A short ad opens tailored resume suggestions " +
-                        "and resume-specific interview questions."
+                    "A short ad opens tailored resume suggestions and " +
+                        "resume-specific interview questions.\n\n" +
+                        "After the ad, your resume text and optional job description " +
+                        "will be sent through our server to DeepSeek, an external " +
+                        "large language model, for analysis."
                 )
                 .setPositiveButton("Watch Ad") { _, _ ->
                     isSecondAdUnlocked = true
@@ -246,7 +249,7 @@ class ResumeReportActivity : AppCompatActivity() {
             ReportShareUtils.shareText(
                 this,
                 "Share resume report",
-                "InterviewSprout report for $targetRole",
+                "Resume Refine report for $targetRole",
                 shareableReport
             )
         }
@@ -256,8 +259,8 @@ class ResumeReportActivity : AppCompatActivity() {
         ).setOnClickListener {
             ReportShareUtils.exportPdf(
                 this,
-                "InterviewSprout_${targetRole}_${report.overallScore}",
-                "InterviewSprout Resume Report",
+                "Resume_Refine_${targetRole}_${report.overallScore}",
+                "Resume Refine Report",
                 shareableReport
             )
         }
@@ -269,7 +272,7 @@ class ResumeReportActivity : AppCompatActivity() {
         report: ResumeReportResult
     ): String {
         return """
-InterviewSprout Resume Report
+Resume Refine Report
 
 Target role: $targetRole
 Experience: $experienceLevel

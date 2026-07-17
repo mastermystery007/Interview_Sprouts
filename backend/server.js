@@ -248,5 +248,5 @@ function emptyResponse(error) {
 }
 
 app.listen(PORT, () => {
-  console.info(`InterviewSprouts backend listening on port ${PORT}`);
+  console.info(`Resume Refine backend listening on port ${PORT}`);
 });

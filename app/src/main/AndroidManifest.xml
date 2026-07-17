@@ -14,7 +14,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.InterviewSprouts">
+        android:theme="@style/Theme.Resume Refine">
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -50,7 +50,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.InterviewSprouts">
+            android:theme="@style/Theme.Resume Refine">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
