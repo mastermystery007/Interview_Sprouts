@@ -1,5 +1,6 @@
 name: Apply remaining fixes
 
+# One-time workflow: remove after applying the source changes.
 on:
   push:
     branches:
