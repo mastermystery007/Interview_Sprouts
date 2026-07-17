@@ -2,6 +2,6 @@
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/interviewsprout_icon"
     android:insetLeft="0dp"
-    android:insetTop="0dp"
+    android:insetTop="4dp"
     android:insetRight="0dp"
     android:insetBottom="0dp" />
