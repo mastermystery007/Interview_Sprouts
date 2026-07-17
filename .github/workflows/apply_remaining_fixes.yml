@@ -7,6 +7,11 @@ on:
       - main
     paths:
       - .github/workflows/apply_remaining_fixes.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/final-fixes-trigger.txt
 
 permissions:
   contents: write
@@ -32,14 +37,15 @@ jobs:
       - name: Apply source changes
         run: python .github/apply_remaining_fixes.py
 
-      - name: Commit changes to main
+      - name: Commit changes
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Apply remaining report and input UX fixes"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git push origin HEAD:"$TARGET_BRANCH"
 
       - name: Build debug APK
         run: |
