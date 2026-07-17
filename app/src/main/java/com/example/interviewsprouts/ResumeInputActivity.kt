@@ -1,9 +1,13 @@
 package com.example.interviewsprouts
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.view.MotionEvent
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -19,11 +23,15 @@ import java.util.zip.ZipInputStream
 
 class ResumeInputActivity : AppCompatActivity() {
     private var extractedResumeText: String = ""
+    private var reportLaunchInProgress: Boolean = false
 
     private lateinit var textAttachedFile: TextView
     private lateinit var textExtractionStatus: TextView
     private lateinit var spinnerTargetRole: Spinner
     private lateinit var editResumeText: EditText
+    private lateinit var loadingOverlay: View
+    private lateinit var btnAnalyzeResume: Button
+    private lateinit var btnUploadResume: Button
 
     private val professionList = listOf(
         "Software Engineer",
@@ -113,11 +121,15 @@ class ResumeInputActivity : AppCompatActivity() {
         textExtractionStatus = findViewById(R.id.textExtractionStatus)
         spinnerTargetRole = findViewById(R.id.spinnerTargetRole)
         editResumeText = findViewById(R.id.editResumeText)
+        loadingOverlay = findViewById(R.id.loadingOverlay)
+        btnAnalyzeResume = findViewById(R.id.btnAnalyzeResume)
+        btnUploadResume = findViewById(R.id.btnUploadPdf)
 
         val spinnerExperienceLevel = findViewById<Spinner>(R.id.spinnerExperienceLevel)
         val editJobSpecification = findViewById<EditText>(R.id.editJobSpecification)
-        val btnAnalyzeResume = findViewById<Button>(R.id.btnAnalyzeResume)
-        val btnUploadResume = findViewById<Button>(R.id.btnUploadPdf)
+
+        enableInternalScrolling(editResumeText)
+        enableInternalScrolling(editJobSpecification)
 
         val professionAdapter = ArrayAdapter(this, R.layout.spinner_item, professionList)
         professionAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item)
@@ -148,13 +160,87 @@ class ResumeInputActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            val intent = Intent(this, ResumeReportActivity::class.java)
-            intent.putExtra("resume_text", resumeText)
-            intent.putExtra("target_role", targetRole)
-            intent.putExtra("experience_level", experienceLevel)
-            intent.putExtra("job_specification", jobSpecification)
-            startActivity(intent)
+            val intent = Intent(this, ResumeReportActivity::class.java).apply {
+                putExtra("resume_text", resumeText)
+                putExtra("target_role", targetRole)
+                putExtra("experience_level", experienceLevel)
+                putExtra("job_specification", jobSpecification)
+            }
+
+            reportLaunchInProgress = true
+            hideKeyboard()
+            showLoadingState(true)
+
+            loadingOverlay.postDelayed(
+                {
+                    if (!isFinishing && reportLaunchInProgress) {
+                        try {
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            reportLaunchInProgress = false
+                            showLoadingState(false)
+                            Toast.makeText(
+                                this,
+                                "Could not open the report: ${e.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                },
+                180L
+            )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        if (reportLaunchInProgress) {
+            reportLaunchInProgress = false
+            showLoadingState(false)
+        }
+    }
+
+    private fun enableInternalScrolling(editText: EditText) {
+        editText.isVerticalScrollBarEnabled = true
+        editText.setHorizontallyScrolling(false)
+
+        editText.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN,
+                MotionEvent.ACTION_MOVE ->
+                    view.parent?.requestDisallowInterceptTouchEvent(true)
+
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_CANCEL ->
+                    view.parent?.requestDisallowInterceptTouchEvent(false)
+            }
+
+            false
+        }
+    }
+
+    private fun showLoadingState(show: Boolean) {
+        loadingOverlay.visibility =
+            if (show) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+
+        btnAnalyzeResume.isEnabled = !show
+        btnUploadResume.isEnabled = !show
+    }
+
+    private fun hideKeyboard() {
+        val inputMethodManager =
+            getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+
+        currentFocus?.windowToken?.let { token ->
+            inputMethodManager.hideSoftInputFromWindow(token, 0)
+        }
+
+        currentFocus?.clearFocus()
     }
 
     private fun extractTextFromDocument(uri: Uri, fileName: String): String {
