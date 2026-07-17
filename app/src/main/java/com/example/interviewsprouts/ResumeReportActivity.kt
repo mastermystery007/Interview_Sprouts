@@ -216,6 +216,75 @@ class ResumeReportActivity : AppCompatActivity() {
             saveReportLocally(targetRole, experienceLevel, report)
             Toast.makeText(this, "Report saved locally on this device.", Toast.LENGTH_SHORT).show()
         }
+
+        val shareableReport =
+            buildShareableReport(
+                targetRole,
+                experienceLevel,
+                report
+            )
+
+        findViewById<Button>(
+            R.id.btnCopyTopImprovement
+        ).setOnClickListener {
+            ReportShareUtils.copyText(
+                this,
+                "Top resume improvement",
+                report.copyableImprovement
+            )
+
+            Toast.makeText(
+                this,
+                "Top improvement copied.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        findViewById<Button>(
+            R.id.btnShareReport
+        ).setOnClickListener {
+            ReportShareUtils.shareText(
+                this,
+                "Share resume report",
+                "InterviewSprout report for $targetRole",
+                shareableReport
+            )
+        }
+
+        findViewById<Button>(
+            R.id.btnExportReportPdf
+        ).setOnClickListener {
+            ReportShareUtils.exportPdf(
+                this,
+                "InterviewSprout_${targetRole}_${report.overallScore}",
+                "InterviewSprout Resume Report",
+                shareableReport
+            )
+        }
+    }
+
+    private fun buildShareableReport(
+        targetRole: String,
+        experienceLevel: String,
+        report: ResumeReportResult
+    ): String {
+        return """
+InterviewSprout Resume Report
+
+Target role: $targetRole
+Experience: $experienceLevel
+Overall score: ${report.overallScore}/100
+Rating: ${scoreRatingLabel(report.overallScore)}
+${report.jdStatus}
+
+Quick Review
+
+${report.basicFeedback}
+
+Detailed Analysis
+
+${report.fullReport}
+        """.trimIndent()
     }
 
     private fun startAdvancedLoadingAnimation(
@@ -564,6 +633,11 @@ class ResumeReportActivity : AppCompatActivity() {
             "Overall fit",
             "JD status",
             "Keyword preview",
+            "Highest-priority bullet",
+            "Original",
+            "Why the bullet is weak",
+            "Improved structure",
+            "Requirement evidence map",
             "Missing role evidence",
             "Weak or vague bullets",
             "Quantified impact",
@@ -782,16 +856,60 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         experienceLevel: String,
         jobSpecification: String
     ): ResumeReportResult {
-        val roleKeywords = getKeywordsForRole(targetRole)
-        val jdKeywords = extractSimpleKeywordsFromJobSpec(jobSpecification.lowercase())
-        val combinedKeywords = (roleKeywords + jdKeywords).distinctBy { it.lowercase() }
-        val resumeLower = resumeText.lowercase()
-        val foundRoleKeywords = roleKeywords.filter { resumeLower.contains(it.lowercase()) }
-        val missingRoleKeywords = roleKeywords.filterNot { resumeLower.contains(it.lowercase()) }
-        val foundJdKeywords = jdKeywords.filter { resumeLower.contains(it.lowercase()) }
-        val missingJdKeywords = jdKeywords.filterNot { resumeLower.contains(it.lowercase()) }
-        val foundKeywords = combinedKeywords.filter { resumeLower.contains(it.lowercase()) }
-        val missingKeywords = combinedKeywords.filterNot { resumeLower.contains(it.lowercase()) }
+        val roleKeywords =
+            getKeywordsForRole(targetRole)
+
+        val jdKeywords =
+            extractSimpleKeywordsFromJobSpec(
+                jobSpecification.lowercase()
+            )
+
+        val evidenceMatch =
+            EvidenceAwareMatcher.analyze(
+                resumeText = resumeText,
+                jobDescription = jobSpecification,
+                roleKeywords = roleKeywords,
+                jdKeywords = jdKeywords
+            )
+
+        val combinedKeywords =
+            (roleKeywords + jdKeywords)
+                .distinctBy {
+                    it.lowercase()
+                }
+
+        val resumeLower =
+            resumeText.lowercase()
+
+        val foundRoleKeywords =
+            roleKeywords.filter {
+                evidenceMatch.confidenceFor(it) >= 0.60
+            }
+
+        val missingRoleKeywords =
+            roleKeywords.filter {
+                evidenceMatch.confidenceFor(it) < 0.60
+            }
+
+        val foundJdKeywords =
+            jdKeywords.filter {
+                evidenceMatch.confidenceFor(it) >= 0.60
+            }
+
+        val missingJdKeywords =
+            jdKeywords.filter {
+                evidenceMatch.confidenceFor(it) < 0.60
+            }
+
+        val foundKeywords =
+            combinedKeywords.filter {
+                evidenceMatch.confidenceFor(it) >= 0.60
+            }
+
+        val missingKeywords =
+            combinedKeywords.filter {
+                evidenceMatch.confidenceFor(it) < 0.60
+            }
 
         val atsParserRisks =
             detectAtsParserRisks(resumeText)
@@ -806,13 +924,18 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         val vaguePhrases = detectVaguePhrases(resumeText)
         val genericClaims = detectGenericClaims(resumeText)
         val responsibilityNoOutcome = detectResponsibilityWithoutOutcome(resumeText)
-        val missingRoleEvidence = detectMissingRoleEvidence(resumeText, targetRole, jobSpecification)
+        val missingRoleEvidence =
+            evidenceMatch.requirements
+                .filter {
+                    it.confidence < 0.60
+                }
+                .map {
+                    "${it.requirement} — ${it.status}."
+                }
+                .take(6)
 
         val keywordMatchScore =
-            calculateKeywordMatchScore(
-                foundKeywords.size,
-                combinedKeywords.size
-            )
+            evidenceMatch.matchScore
 
         val measurableImpactScore =
             calculateMeasurableImpactScore(resumeText)
@@ -888,42 +1011,54 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
         )
         val sectionOrderIssues = detectSectionOrderIssues(resumeText)
         val missingSections = detectMissingSections(resumeText)
-        val topGap = when {
-            missingJdKeywords.isNotEmpty() ->
-                "${missingJdKeywords.first()} is not clearly evidenced for the attached JD."
+        val topGap =
+            evidenceMatch.topGap?.let {
+                when {
+                    it.confidence == 0.0 ->
+                        "${it.requirement} is not evidenced in Skills, Experience, or Projects."
 
-            missingRoleKeywords.isNotEmpty() ->
-                "${missingRoleKeywords.first()} is not clearly evidenced for the selected role."
+                    it.confidence < 0.60 ->
+                        "${it.requirement} is mentioned, but it is not supported by a concrete work or project example."
 
-            missingSections.isNotEmpty() ->
-                "${missingSections.first()} section is not clearly detected."
+                    else ->
+                        "${it.requirement} has some evidence, but the result or scope is not yet clear."
+                }
+            }
+                ?: "No major role-fit gap was detected."
 
-            atsParserRisks.isNotEmpty() ->
-                atsParserRisks.first()
+        val topImprovement =
+            evidenceMatch.topGap?.let {
+                when {
+                    it.confidence == 0.0 ->
+                        "Add a truthful Experience or Projects bullet showing how you used ${it.requirement}."
 
-            else ->
-                "No major role-fit gap was detected."
-        }
+                    it.confidence < 0.60 ->
+                        "Move ${it.requirement} beyond the Skills section by connecting it to a specific task, tool, and result."
 
-        val topImprovement = when {
-            missingJdKeywords.isNotEmpty() ->
-                "Add concrete evidence of ${missingJdKeywords.first()} where it truthfully applies."
+                    else ->
+                        "Strengthen the ${it.requirement} evidence with ownership, scale, and a verifiable outcome."
+                }
+            }
+                ?: when {
+                    impactSignals.isEmpty() ->
+                        "Add one truthful metric such as users, %, time saved, accuracy, revenue, cost, latency, scale, or efficiency."
 
-            missingRoleKeywords.isNotEmpty() ->
-                "Show how you used ${missingRoleKeywords.first()} in a project, job, or measurable result."
+                    responsibilityNoOutcome.isNotEmpty() ->
+                        "Rewrite one responsibility-only bullet to show the result or outcome."
 
-            impactSignals.isEmpty() ->
-                "Add one truthful metric such as users, %, time saved, accuracy, revenue, cost, latency, scale, or efficiency."
+                    vaguePhrases.isNotEmpty() ->
+                        "Replace vague wording with a specific task, tool, and result."
 
-            responsibilityNoOutcome.isNotEmpty() ->
-                "Rewrite one responsibility-only bullet to show the result or outcome."
+                    else ->
+                        "Improve the most important bullet by adding context, tools used, and outcome."
+                }
 
-            vaguePhrases.isNotEmpty() ->
-                "Replace vague wording with a specific task, tool, and result."
+        val freeBulletPreview =
+            EvidenceAwareMatcher.buildBulletPreview(
+                resumeText,
+                combinedKeywords
+            )
 
-            else ->
-                "Improve the most important bullet by adding context, tools used, and outcome."
-        }
         val bestSectionToImprove = suggestWhereToAddKeyword((missingJdKeywords + missingRoleKeywords).firstOrNull() ?: "role evidence")
         val jdStatus = if (jobSpecification.isBlank()) "JD: Not attached" else "JD: Attached"
 
@@ -935,6 +1070,20 @@ $topImprovement
 Why this matters
 
 $topGap
+
+Highest-priority bullet
+
+Original
+
+${freeBulletPreview.original}
+
+Why the bullet is weak
+
+${freeBulletPreview.weakness}
+
+Improved structure
+
+${freeBulletPreview.improvedStructure}
 
 Overall fit
 
@@ -1024,6 +1173,10 @@ First recommended action
 
         val keywords = """
 Keywords
+
+Requirement evidence map
+
+${evidenceMatch.formatEvidenceMap(12)}
 
 Role keywords found
 
@@ -1155,6 +1308,10 @@ Evidence quality
             }
         }
 
+Requirement evidence map
+
+${evidenceMatch.formatEvidenceMap(10)}
+
 $jdMatchSection
 
 Resume Structure
@@ -1203,7 +1360,8 @@ Priority Fixes
             gaps,
             keywords,
             bespoke,
-            jdStatus
+            jdStatus,
+            freeBulletPreview.copyText
         )
     }
 
@@ -2283,5 +2441,6 @@ data class ResumeReportResult(
     val gapsContent: String,
     val keywordsContent: String,
     val bespokeContent: String,
-    val jdStatus: String
+    val jdStatus: String,
+    val copyableImprovement: String
 )
