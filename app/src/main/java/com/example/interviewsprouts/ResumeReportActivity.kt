@@ -1059,6 +1059,25 @@ ${compactQuestions(generateInterviewQuestionsFromResume(resumeText, targetRole, 
                 combinedKeywords
             )
 
+        val bulletPreviewSection =
+            freeBulletPreview?.let { preview ->
+                """
+Highest-priority bullet
+
+Original
+
+${preview.original}
+
+Why the bullet is weak
+
+${preview.weakness}
+
+Improved structure
+
+${preview.improvedStructure}
+                """.trimIndent()
+            }.orEmpty()
+
         val bestSectionToImprove = suggestWhereToAddKeyword((missingJdKeywords + missingRoleKeywords).firstOrNull() ?: "role evidence")
         val jdStatus = if (jobSpecification.isBlank()) "JD: Not attached" else "JD: Attached"
 
@@ -1071,19 +1090,7 @@ Why this matters
 
 $topGap
 
-Highest-priority bullet
-
-Original
-
-${freeBulletPreview.original}
-
-Why the bullet is weak
-
-${freeBulletPreview.weakness}
-
-Improved structure
-
-${freeBulletPreview.improvedStructure}
+$bulletPreviewSection
 
 Overall fit
 
@@ -1361,7 +1368,7 @@ Priority Fixes
             keywords,
             bespoke,
             jdStatus,
-            freeBulletPreview.copyText
+            freeBulletPreview?.copyText ?: topImprovement
         )
     }
 

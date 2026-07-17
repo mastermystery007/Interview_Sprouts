@@ -1,6 +1,8 @@
 package com.example.interviewsprouts
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -50,7 +52,42 @@ Responsible for Android application development.
             relevantKeywords = listOf("Android")
         )
 
-        assertTrue(preview.improvedStructure.contains("[truthful outcome or metric]"))
+        assertNotNull(preview)
+        assertTrue(preview!!.improvedStructure.contains("[truthful outcome or metric]"))
         assertTrue(preview.weakness.contains("responsibility", ignoreCase = true))
     }
+
+    @Test
+    fun companyLocationAndDateLineIsNotSelectedAsWeakBullet() {
+        val preview = EvidenceAwareMatcher.buildBulletPreview(
+            resumeText = """
+Experience
+Google | Bangalore, May 2024-25
+Software Development Engineer
+Responsible for Android application development and release support.
+            """.trimIndent(),
+            relevantKeywords = listOf("Android")
+        )
+
+        assertNotNull(preview)
+        assertEquals(
+            "Responsible for Android application development and release support.",
+            preview!!.original
+        )
+    }
+
+    @Test
+    fun previewIsHiddenWhenResumeContainsOnlyEmployerMetadata() {
+        val preview = EvidenceAwareMatcher.buildBulletPreview(
+            resumeText = """
+Experience
+Google | Bangalore, May 2024-25
+Software Development Engineer
+            """.trimIndent(),
+            relevantKeywords = listOf("Android")
+        )
+
+        assertNull(preview)
+    }
+
 }

@@ -211,7 +211,7 @@ object EvidenceAwareMatcher {
     fun buildBulletPreview(
         resumeText: String,
         relevantKeywords: List<String>
-    ): BulletPreview {
+    ): BulletPreview? {
         val candidateLines = parseResumeLines(resumeText)
             .filter {
                 it.section == ResumeSection.EXPERIENCE ||
@@ -219,8 +219,9 @@ object EvidenceAwareMatcher {
                     it.section == ResumeSection.OTHER
             }
             .map { it.text }
-            .filter { it.length in 25..260 }
+            .filter { it.length in 20..260 }
             .filterNot { looksLikeHeading(it) }
+            .filter { isLikelyBulletCandidate(it) }
 
         val selected = candidateLines
             .maxByOrNull { line ->
@@ -260,11 +261,7 @@ object EvidenceAwareMatcher {
             }
 
         if (selected == null) {
-            return BulletPreview(
-                original = "No clear experience or project bullet was detected.",
-                weakness = "The resume needs at least one concrete achievement or responsibility line.",
-                improvedStructure = "Add: [Strong action verb] [specific task] using [tool or method], resulting in [truthful outcome or metric]."
-            )
+            return null
         }
 
         val issues = mutableListOf<String>()
@@ -558,6 +555,78 @@ object EvidenceAwareMatcher {
 
             else -> null
         }
+    }
+
+
+    private fun isLikelyBulletCandidate(line: String): Boolean {
+        val cleaned = line.trim()
+        if (cleaned.isBlank()) {
+            return false
+        }
+
+        val hasAction = containsActionVerb(cleaned)
+        val startsWithResponsibility = Regex(
+            """(?i)^\s*(worked on|responsible for|helped(?: with)?|handled|supported|maintained|collaborated|conducted|performed|assisted|owned)\b"""
+        ).containsMatchIn(cleaned)
+
+        val hasMonth = Regex(
+            """(?i)\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\b"""
+        ).containsMatchIn(cleaned)
+
+        val hasYearOrDateRange = Regex(
+            """(?i)\b(?:19|20)\d{2}\b|\b(?:19|20)\d{2}\s*[-–—/]\s*(?:\d{2,4}|present|current)\b"""
+        ).containsMatchIn(cleaned)
+
+        val hasMetadataSeparator =
+            cleaned.contains('|') ||
+                cleaned.contains('·') ||
+                cleaned.contains('•') ||
+                cleaned.contains('\t')
+
+        val looksLikeContactOrLink =
+            Regex("""(?i)\b[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}\b""").containsMatchIn(cleaned) ||
+                Regex("""(?i)https?://|www\.|linkedin\.com|github\.com""").containsMatchIn(cleaned) ||
+                Regex("""(?<!\w)(?:\+?\d[\d\s().-]{7,}\d)(?!\w)""").containsMatchIn(cleaned)
+
+        if (looksLikeContactOrLink) {
+            return false
+        }
+
+        if (
+            !hasAction &&
+            !startsWithResponsibility &&
+            (
+                hasMetadataSeparator ||
+                    (hasMonth && hasYearOrDateRange) ||
+                    hasYearOrDateRange
+                )
+        ) {
+            return false
+        }
+
+        val wordCount = Regex("""[A-Za-z][A-Za-z0-9+#.&/-]*""")
+            .findAll(cleaned)
+            .count()
+
+        if (wordCount < 4 && !hasAction && !startsWithResponsibility) {
+            return false
+        }
+
+        val compactTitleOrCompanyLine =
+            wordCount <= 8 &&
+                !hasAction &&
+                !startsWithResponsibility &&
+                !containsOutcome(cleaned) &&
+                !cleaned.endsWith('.') &&
+                !cleaned.endsWith(';')
+
+        if (compactTitleOrCompanyLine) {
+            return false
+        }
+
+        return hasAction ||
+            startsWithResponsibility ||
+            wordCount >= 8
     }
 
     private fun looksLikeHeading(line: String): Boolean {
