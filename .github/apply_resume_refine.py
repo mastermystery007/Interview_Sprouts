@@ -121,4 +121,4 @@ print("Changed files:")
 for item in sorted(changed):
     print(item)
 
-# Trigger pull-request verification and commit the verified migration.
+# Retrigger after changing the workflow commit order.
