@@ -1,0 +1,53 @@
+name: Verify bullet preview filtering
+
+on:
+  push:
+    branches:
+      - direct/fix-bullet-preview
+    paths:
+      - .github/workflows/fix_bullet_preview.yml
+      - .github/fix_bullet_preview.py
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out implementation branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: direct/fix-bullet-preview
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Apply safe bullet preview fix
+        run: python .github/fix_bullet_preview.py
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew clean assembleDebug --stacktrace
+
+      - name: Run unit tests
+        run: ./gradlew test
+
+      - name: Run Android lint
+        run: ./gradlew lint
+
+      - name: Commit verified changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Exclude employer metadata from bullet preview"
+          git push origin HEAD:refs/heads/direct/fix-bullet-preview
