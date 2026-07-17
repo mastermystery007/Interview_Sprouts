@@ -1,2 +1,2 @@
 Apply the remaining report, role-name, and JD-field fixes.
-Retry: use literal regex replacement handling.
+Retry: use callable XML group substitution and verify the complete transformation.
