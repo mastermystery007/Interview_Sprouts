@@ -14,7 +14,7 @@ on:
       - .github/final-fixes-trigger.txt
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apply:
@@ -45,29 +45,25 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Commit failure details
-        if: steps.apply_fixes.outputs.status != '0'
-        run: |
-          git restore --worktree --staged .
-          git clean -fd
-          mkdir -p .github
-          cp /tmp/fix-output.log .github/fix-output.log
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/fix-output.log
-          git commit -m "Capture remaining fixes script failure"
-          git push origin HEAD:refs/heads/direct/apply-final-fixes
-          exit 1
-
-      - name: Commit changes
+      - name: Upload modified source files
         if: steps.apply_fixes.outputs.status == '0'
-        run: |
-          git restore .github/workflows/apply_remaining_fixes.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Apply remaining report and input UX fixes"
-          git push origin HEAD:refs/heads/direct/apply-final-fixes
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-fixed-sources
+          if-no-files-found: error
+          path: |
+            app/src/main/java/com/example/interviewsprouts/ResumeReportActivity.kt
+            app/src/main/java/com/example/interviewsprouts/ResumeInputActivity.kt
+            app/src/main/res/layout/activity_resume_report.xml
+            app/src/main/res/layout/activity_resume_input.xml
+            .idea/planningMode.xml
+
+      - name: Upload script failure log
+        if: steps.apply_fixes.outputs.status != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-fixes-error
+          path: /tmp/fix-output.log
 
       - name: Build debug APK
         if: steps.apply_fixes.outputs.status == '0'
@@ -82,3 +78,7 @@ jobs:
       - name: Run lint
         if: steps.apply_fixes.outputs.status == '0'
         run: ./gradlew lint
+
+      - name: Fail if source transformation failed
+        if: steps.apply_fixes.outputs.status != '0'
+        run: exit 1
