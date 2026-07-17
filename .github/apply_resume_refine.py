@@ -121,4 +121,4 @@ print("Changed files:")
 for item in sorted(changed):
     print(item)
 
-# Retrigger after changing the workflow commit order.
+# Trigger build diagnostics for the transformed branch.
