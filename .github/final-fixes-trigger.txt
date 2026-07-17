@@ -1,2 +1,2 @@
 Apply the remaining report, role-name, and JD-field fixes.
-Retry: push explicitly to direct/apply-final-fixes.
+Retry: generate verified modified source files as an artifact.
