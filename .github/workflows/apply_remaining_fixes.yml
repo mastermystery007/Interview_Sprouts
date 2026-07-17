@@ -38,6 +38,16 @@ jobs:
       - name: Apply source changes
         id: apply_fixes
         run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/apply_remaining_fixes.py')
+          text = path.read_text(encoding='utf-8')
+          old = 'updated, count = re.subn(pattern, replacement, text, count=expected, flags=re.DOTALL)'
+          new = 'updated, count = re.subn(pattern, lambda _: replacement, text, count=expected, flags=re.DOTALL)'
+          if old not in text:
+              raise SystemExit('Expected replace_regex implementation not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           set +e
           python .github/apply_remaining_fixes.py > /tmp/fix-output.log 2>&1
           status=$?
