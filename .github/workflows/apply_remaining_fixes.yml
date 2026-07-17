@@ -42,11 +42,33 @@ jobs:
           from pathlib import Path
           path = Path('.github/apply_remaining_fixes.py')
           text = path.read_text(encoding='utf-8')
-          old = 'updated, count = re.subn(pattern, replacement, text, count=expected, flags=re.DOTALL)'
-          new = 'updated, count = re.subn(pattern, lambda _: replacement, text, count=expected, flags=re.DOTALL)'
-          if old not in text:
+
+          old_helper = 'updated, count = re.subn(pattern, replacement, text, count=expected, flags=re.DOTALL)'
+          new_helper = 'updated, count = re.subn(pattern, lambda _: replacement, text, count=expected, flags=re.DOTALL)'
+          if old_helper not in text:
               raise SystemExit('Expected replace_regex implementation not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          text = text.replace(old_helper, new_helper, 1)
+
+          old_xml = '''layout_report = replace_regex(
+              layout_report,
+              r'(<TextView\\s+android:id="@\\+id/textScoreValue"[\\s\\S]*?android:textSize=")20sp(")',
+              r'\\g<1>16sp\\g<2>',
+              "score label XML size"
+          )'''
+          new_xml = '''layout_report, score_size_count = re.subn(
+              r'(<TextView\\s+android:id="@\\+id/textScoreValue"[\\s\\S]*?android:textSize=")20sp(")',
+              lambda match: f'{match.group(1)}16sp{match.group(2)}',
+              layout_report,
+              count=1,
+              flags=re.DOTALL,
+          )
+          if score_size_count != 1:
+              raise RuntimeError(f"score label XML size: expected 1 match, found {score_size_count}")'''
+          if old_xml not in text:
+              raise SystemExit('Expected score XML replacement block not found')
+          text = text.replace(old_xml, new_xml, 1)
+
+          path.write_text(text, encoding='utf-8')
           PY
           set +e
           python .github/apply_remaining_fixes.py > /tmp/fix-output.log 2>&1
