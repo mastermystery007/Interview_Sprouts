@@ -715,7 +715,7 @@ class ResumeReportActivity : AppCompatActivity() {
             ?: "Measurable evidence: no clear metrics detected; add numbers only where verifiable."
         val advanced = listOf(
             "Target role: $targetRole ($experienceLevel).",
-            "Strong evidence: ${bullets.take(2).joinToString("; ").ifBlank { "Add clearer role evidence from your resume." }}",
+            "Achievement evidence: ${bullets.take(2).joinToString("; ").ifBlank { "No achievement-focused evidence was detected yet." }}",
             "Weak or missing evidence: ${missingJd.take(3).joinToString(", ").ifBlank { "No major JD-specific weakness detected from available text." }}",
             metricSummary
         ).joinToString("\n") { "• $it" }
@@ -1541,13 +1541,13 @@ Priority Fixes
 
         if (
             jobSpecification.isNotBlank() &&
-            jdRoleMatchScore < 15
+            jdRoleMatchScore <= 20
         ) {
             cappedScore =
                 minOf(cappedScore, 60)
         }
 
-        if (measurableImpactScore < 20) {
+        if (measurableImpactScore < 40) {
             cappedScore =
                 minOf(cappedScore, 78)
         }
@@ -1623,7 +1623,12 @@ Priority Fixes
         )
         val impactWords = listOf("improved", "reduced", "increased", "saved", "optimized", "accelerated", "streamlined", "delivered", "resolved")
         val unitPattern = impactUnits.joinToString("|")
-        val hasImpactUnitNearNumber = Regex("\\b\\d+(?:[.,]\\d+)?\\+?\\s*(?:$unitPattern)\\b|\\b(?:$impactUnits)\\b\\W{0,24}\\b\\d+(?:[.,]\\d+)?\\+?\\b", RegexOption.IGNORE_CASE).containsMatchIn(cleaned)
+        val hasImpactUnitNearNumber = Regex(
+            "\\b\\d+(?:[.,]\\d+)?\\+?\\s*(?:$unitPattern)\\b|" +
+                "\\b(?:$unitPattern)\\b\\W{0,24}" +
+                "\\b\\d+(?:[.,]\\d+)?\\+?\\b",
+            RegexOption.IGNORE_CASE
+        ).containsMatchIn(cleaned)
         val hasNumberAndImpactWord = hasNumber && impactWords.any { lower.contains(it) }
         return hasPercentage || hasCurrency || hasImpactUnitNearNumber || hasNumberAndImpactWord
     }
